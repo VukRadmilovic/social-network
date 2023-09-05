@@ -22,6 +22,10 @@ class UserService @Inject() (userRepository: UserRepository,
   def getByEmail(email: String): Future[Option[User]] = userRepository.getByEmail(email)
 
   def register(user: NewUser): Future[Either[Result, User]] = {
+    if (user.username.isBlank || user.email.isBlank || user.displayName.isBlank || user.password.isBlank) {
+      return Future.successful(Left(BadRequest(Json.obj("message" -> "Please enter all the data"))))
+    }
+
     val usernameFuture = userRepository.getByUsername(user.username)
     val emailFuture = userRepository.getByEmail(user.email)
 
