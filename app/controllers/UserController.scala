@@ -1,6 +1,6 @@
 package controllers
 
-import dtos.NewUser
+import dtos.{LoginAttempt, NewUser}
 import models.User
 
 import javax.inject._
@@ -20,6 +20,7 @@ class UserController @Inject()(val controllerComponents: ControllerComponents,
                               (implicit ec: ExecutionContext) extends BaseController {
   implicit val usersJson: OFormat[User] = Json.format[User]
   implicit val newUsersJson: OFormat[NewUser] = Json.format[NewUser]
+  implicit val loginAttemptJson: OFormat[LoginAttempt] = Json.format[LoginAttempt]
 
   def getAll: Action[AnyContent] = Action.async {
     userService.getAll.map(users => Ok(Json.toJson(users)))
@@ -46,6 +47,26 @@ class UserController @Inject()(val controllerComponents: ControllerComponents,
             Created(Json.toJson(newUser))
           case Left(result) =>
             result
+        }
+      case None =>
+        Future.successful(BadRequest)
+    }
+  }
+
+  def login(): Action[AnyContent] = Action.async { implicit request =>
+    val body = request.body.asJson
+    val attempt: Option[LoginAttempt] =
+      body.flatMap(
+        Json.fromJson[LoginAttempt](_).asOpt
+      )
+
+    attempt match {
+      case Some(loginAttempt) =>
+        userService.login(loginAttempt).map {
+          case true =>
+            Ok("Successfully logged in")
+          case false =>
+            BadRequest("Your username or password is incorrect")
         }
       case None =>
         Future.successful(BadRequest)

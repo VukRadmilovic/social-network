@@ -1,6 +1,7 @@
 package services
 
-import dtos.NewUser
+import dtos.{LoginAttempt, NewUser}
+import helpers.Cryptography
 import models.User
 import play.api.libs.json.Json
 import play.api.mvc.Result
@@ -10,6 +11,7 @@ import repositories.UserRepository
 import javax.inject.Inject
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
+
 
 class UserService @Inject() (userRepository: UserRepository) (implicit ec: ExecutionContext) {
   def getAll: Future[ListBuffer[User]] = userRepository.getAll
@@ -32,10 +34,21 @@ class UserService @Inject() (userRepository: UserRepository) (implicit ec: Execu
         case (_, Some(_)) =>
           Left(BadRequest(Json.obj("message" -> "Email is already in use")))
         case (None, None) =>
-          val newUser = new User(user)
+          val newUser = new User(user, Cryptography.hashPassword(user.password))
           userRepository.create(newUser)
           Right(newUser)
       }
+    }
+  }
+
+  def login(loginAttempt: LoginAttempt): Future[Boolean] = {
+    val userFuture = userRepository.getByUsername(loginAttempt.username)
+
+    userFuture.map {
+      case Some(user) =>
+        Cryptography.checkPassword(loginAttempt.password, user.password)
+      case None =>
+        false
     }
   }
 }

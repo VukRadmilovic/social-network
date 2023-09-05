@@ -9,8 +9,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class UserRepository @Inject() (implicit ec: ExecutionContext) {
   private var users = ListBuffer[User]()
-  users += User("jova", "Jova", "123", "jova@mail.com", Array[User]())
-  users += User("nika", "Nika", "456", "nika@mail.com", Array[User]())
+  users += User("jova", "Jova", "10000:nPgQghJANf+lmHoINwqgEvl/7whHWlCZHht9xUdVns8=:PdRPv/yXYtn/C0N0xJoikQ==", "jova@mail.com", Array[User]())
+  users += User("nika", "Nika", "10000:nPgQghJANf+lmHoINwqgEvl/7whHWlCZHht9xUdVns8=:PdRPv/yXYtn/C0N0xJoikQ==", "nika@mail.com", Array[User]())
 
   def getAll: Future[ListBuffer[User]] = Future {
     users
