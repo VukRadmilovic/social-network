@@ -1,2 +1,3 @@
 GET     /users                       controllers.UserController.getAll
 GET     /users/:username             controllers.UserController.getByUsername(username:String)
+POST    /users                       controllers.UserController.register
