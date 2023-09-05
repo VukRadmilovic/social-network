@@ -7,33 +7,32 @@ import javax.inject._
 import play.api.mvc._
 import play.api.libs.json._
 import repositories.UserRepository
+import services.UserService
+
+import scala.concurrent.{ExecutionContext, Future}
 
 
 // TODO: use database
 @Singleton
 class UserController @Inject()(val controllerComponents: ControllerComponents,
-                               val userRepository: UserRepository) extends BaseController {
+                               val userRepository: UserRepository,
+                               val userService: UserService)
+                              (implicit ec: ExecutionContext) extends BaseController {
   implicit val usersJson: OFormat[User] = Json.format[User]
   implicit val newUsersJson: OFormat[NewUser] = Json.format[NewUser]
 
-  def getAll: Action[AnyContent] = Action {
-    val users = userRepository.getAll
-    if (users.isEmpty) {
-      NoContent
-    } else {
-      Ok(Json.toJson(users))
-    }
+  def getAll: Action[AnyContent] = Action.async {
+    userService.getAll.map(users => Ok(Json.toJson(users)))
   }
 
-  def getByUsername(username: String): Action[AnyContent] = Action {
-    val foundUser = userRepository.getByUsername(username)
-    foundUser match {
+  def getByUsername(username: String): Action[AnyContent] = Action.async {
+    userService.getByUsername(username).map {
       case Some(user) => Ok(Json.toJson(user))
-      case None => NotFound
+      case None => NotFound(s"User with username: $username doesn't exist")
     }
   }
 
-  def register(): Action[AnyContent] = Action { implicit request =>
+  def register(): Action[AnyContent] = Action.async { implicit request =>
     val body = request.body.asJson
     val user: Option[NewUser] =
       body.flatMap(
@@ -42,16 +41,14 @@ class UserController @Inject()(val controllerComponents: ControllerComponents,
 
     user match {
       case Some(user) =>
-        if (userRepository.getByUsername(user.username).isDefined) {
-          BadRequest(Json.obj("message" -> "Username is already in use"))
-        } else if (userRepository.getByEmail(user.email).isDefined) {
-          BadRequest(Json.obj("message" -> "Email is already in use"))
-        } else {
-          val newUser = new User(user)
-          Created(Json.toJson(userRepository.create(newUser)))
+        userService.register(user).map {
+          case Right(newUser) =>
+            Created(Json.toJson(newUser))
+          case Left(result) =>
+            result
         }
       case None =>
-        BadRequest
+        Future.successful(BadRequest)
     }
   }
 }
