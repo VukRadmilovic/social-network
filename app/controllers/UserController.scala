@@ -1,6 +1,8 @@
 package controllers
 
+import actions.JWTAuthAction
 import dtos.{LoginAttempt, NewUser}
+import helpers.RequestKeys.TokenUsername
 import models.User
 
 import javax.inject._
@@ -16,17 +18,19 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class UserController @Inject()(val controllerComponents: ControllerComponents,
                                val userRepository: UserRepository,
-                               val userService: UserService)
+                               val userService: UserService,
+                               val jwtAuthAction: JWTAuthAction)
                               (implicit ec: ExecutionContext) extends BaseController {
   implicit val usersJson: OFormat[User] = Json.format[User]
   implicit val newUsersJson: OFormat[NewUser] = Json.format[NewUser]
   implicit val loginAttemptJson: OFormat[LoginAttempt] = Json.format[LoginAttempt]
 
-  def getAll: Action[AnyContent] = Action.async {
+  def getAll: Action[AnyContent] = jwtAuthAction.async {
     userService.getAll.map(users => Ok(Json.toJson(users)))
   }
 
-  def getByUsername(username: String): Action[AnyContent] = Action.async {
+  def getByUsername(username: String): Action[AnyContent] = jwtAuthAction.async { implicit request =>
+    println(request.attrs.get(TokenUsername).getOrElse(""))
     userService.getByUsername(username).map {
       case Some(user) => Ok(Json.toJson(user))
       case None => NotFound(s"User with username: $username doesn't exist")
@@ -63,9 +67,9 @@ class UserController @Inject()(val controllerComponents: ControllerComponents,
     attempt match {
       case Some(loginAttempt) =>
         userService.login(loginAttempt).map {
-          case true =>
-            Ok("Successfully logged in")
-          case false =>
+          case Some(token) =>
+            Ok(Json.obj("token" -> token))
+          case None =>
             BadRequest("Your username or password is incorrect")
         }
       case None =>

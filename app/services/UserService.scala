@@ -13,7 +13,8 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class UserService @Inject() (userRepository: UserRepository) (implicit ec: ExecutionContext) {
+class UserService @Inject() (userRepository: UserRepository,
+                             authService: AuthService) (implicit ec: ExecutionContext) {
   def getAll: Future[ListBuffer[User]] = userRepository.getAll
 
   def getByUsername(username: String): Future[Option[User]] = userRepository.getByUsername(username)
@@ -41,14 +42,19 @@ class UserService @Inject() (userRepository: UserRepository) (implicit ec: Execu
     }
   }
 
-  def login(loginAttempt: LoginAttempt): Future[Boolean] = {
+  def login(loginAttempt: LoginAttempt): Future[Option[String]] = {
     val userFuture = userRepository.getByUsername(loginAttempt.username)
 
     userFuture.map {
       case Some(user) =>
-        Cryptography.checkPassword(loginAttempt.password, user.password)
+        if (Cryptography.checkPassword(loginAttempt.password, user.password)) {
+          val token = authService.generateToken(user.username)
+          Some(token)
+        } else {
+          None
+        }
       case None =>
-        false
+        None
     }
   }
 }

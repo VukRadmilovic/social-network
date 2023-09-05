@@ -9,6 +9,7 @@ scalaVersion := "2.13.11"
 
 libraryDependencies += guice
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % Test
+libraryDependencies += "com.github.jwt-scala" %% "jwt-play-json" % "9.4.3"
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.novalite.controllers._"
