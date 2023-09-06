@@ -7,11 +7,11 @@ import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
 import javax.inject.Inject
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider) (implicit ec: ExecutionContext)
-  extends HasDatabaseConfigProvider[JdbcProfile] {
+class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
+    implicit ec: ExecutionContext
+) extends HasDatabaseConfigProvider[JdbcProfile] {
 
   import profile.api._
 
@@ -23,38 +23,38 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider) (i
     val usersWithoutFriendsFuture: Future[Seq[User]] = db.run(query)
 
     usersWithoutFriendsFuture.map(usersWithoutFriends =>
-      usersWithoutFriends.map(userWithoutFriends => new UserWithFriends(userWithoutFriends))
+      usersWithoutFriends.map(userWithoutFriends =>
+        new UserWithFriends(userWithoutFriends)
+      )
     )
   }
 
   def getByUsername(username: String): Future[Option[UserWithFriends]] = {
-    val userWithoutFriends = db.run(userTable.filter(_.username === username).result).map(_.headOption)
+    val userWithoutFriends =
+      db.run(userTable.filter(_.username === username).result).map(_.headOption)
 
     userWithoutFriends.map {
       case Some(user) => Some(new UserWithFriends(user))
-      case None => None
+      case None       => None
     }
   }
 
   def getByEmail(email: String): Future[Option[UserWithFriends]] = {
-    val userWithoutFriends = db.run(userTable.filter(_.email === email).result).map(_.headOption)
+    val userWithoutFriends =
+      db.run(userTable.filter(_.email === email).result).map(_.headOption)
 
     userWithoutFriends.map {
       case Some(user) => Some(new UserWithFriends(user))
-      case None => None
+      case None       => None
     }
   }
 
-  def create(user: UserWithFriends): Future[Option[UserWithFriends]] = {
-    val userWithoutFriends = new User(user.username, user.displayName, user.password, user.email)
+  def create(user: UserWithFriends): Future[UserWithFriends] = {
+    val userWithoutFriends =
+      new User(user.username, user.displayName, user.password, user.email)
 
     db.run(userTable += userWithoutFriends)
-      .map(_ => Some(user))
-      .recover {
-        case e: Throwable =>
-          e.printStackTrace()
-          None
-      }
+      .map(_ => user)
   }
 
   class UserTable(tag: Tag) extends Table[User](tag, "users") {
@@ -62,10 +62,16 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider) (i
     def displayName = column[String]("displayName")
     def password = column[String]("password")
     def email = column[String]("email", O.Unique)
-    override def * : ProvenShape[User] = (username, displayName, password, email) <> ((User.apply _).tupled, User.unapply)
+    override def * : ProvenShape[User] = (
+      username,
+      displayName,
+      password,
+      email
+    ) <> ((User.apply _).tupled, User.unapply)
   }
 
-  class FriendshipTable(tag: Tag) extends Table[(String, String)](tag, "friendships") {
+  class FriendshipTable(tag: Tag)
+      extends Table[(String, String)](tag, "friendships") {
     def username1 = column[String]("username1")
     def username2 = column[String]("username2")
 

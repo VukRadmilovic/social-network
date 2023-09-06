@@ -3,47 +3,37 @@ package services
 import dtos.{LoginAttempt, UserWithFriends}
 import helpers.Cryptography
 import models.User
-import play.api.libs.json.Json
-import play.api.mvc.Result
-import play.api.mvc.Results.BadRequest
 import repositories.UserRepository
 
 import javax.inject.Inject
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-
-class UserService @Inject() (userRepository: UserRepository,
-                             authService: AuthService) (implicit ec: ExecutionContext) {
+class UserService @Inject() (
+    userRepository: UserRepository,
+    authService: AuthService,
+    userValidationService: UserValidationService
+)(implicit ec: ExecutionContext) {
   def getAll: Future[Seq[UserWithFriends]] = userRepository.getAll
 
-  def getByUsername(username: String): Future[Option[UserWithFriends]] = userRepository.getByUsername(username)
+  def getByUsername(username: String): Future[Option[UserWithFriends]] =
+    userRepository.getByUsername(username)
 
-  def getByEmail(email: String): Future[Option[UserWithFriends]] = userRepository.getByEmail(email)
+  def getByEmail(email: String): Future[Option[UserWithFriends]] =
+    userRepository.getByEmail(email)
 
-  def register(user: User): Future[Either[Result, UserWithFriends]] = {
-    if (user.username.isBlank || user.email.isBlank || user.displayName.isBlank || user.password.isBlank) {
-      return Future.successful(Left(BadRequest(Json.obj("message" -> "Please enter all the data"))))
-    }
-
-    val usernameFuture = userRepository.getByUsername(user.username)
-    val emailFuture = userRepository.getByEmail(user.email)
-
-    for {
-      usernameOption <- usernameFuture
-      emailOption <- emailFuture
-    } yield {
-      (usernameOption, emailOption) match {
-        case (Some(_), _) =>
-          Left(BadRequest(Json.obj("message" -> "Username is already in use")))
-        case (_, Some(_)) =>
-          Left(BadRequest(Json.obj("message" -> "Email is already in use")))
-        case (None, None) =>
-          val newUser = new UserWithFriends(user, Cryptography.hashPassword(user.password))
-          userRepository.create(newUser)
-          Right(newUser)
-      }
-    }
+  def register(user: User): Future[UserWithFriends] = {
+    userValidationService
+      .validate(user)
+      .flatMap(_ => {
+        val newUser = new UserWithFriends(
+          user,
+          Cryptography.hashPassword(user.password)
+        )
+        userRepository.create(newUser)
+      })
+      .recoverWith(e => {
+        Future.failed(e)
+      })
   }
 
   def login(loginAttempt: LoginAttempt): Future[Option[String]] = {

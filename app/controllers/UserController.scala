@@ -1,17 +1,16 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{LoginAttempt, UserWithFriends}
+import dtos.LoginAttempt
 import helpers.RequestKeys.TokenUsername
 import models.User
-
-import javax.inject._
-import play.api.mvc._
 import play.api.libs.json._
+import play.api.mvc._
 import repositories.UserRepository
 import services.UserService
 
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject._
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class UserController @Inject() (
@@ -38,12 +37,10 @@ class UserController @Inject() (
     implicit request =>
       val user = request.body
 
-      userService.register(user).map {
-        case Right(newUser) =>
-          Created(Json.toJson(newUser))
-        case Left(result) =>
-          result
-      }
+      userService
+        .register(user)
+        .map(newUser => Created(Json.toJson(newUser)))
+        .recover(e => BadRequest(e.getMessage))
   }
 
   def login(): Action[LoginAttempt] = Action.async(parse.json[LoginAttempt]) {
