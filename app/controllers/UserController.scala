@@ -1,7 +1,7 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{LoginAttempt, NewUser}
+import dtos.{LoginAttempt, UserWithoutFriends}
 import helpers.RequestKeys.TokenUsername
 import models.User
 
@@ -13,18 +13,12 @@ import services.UserService
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
-// TODO: use database
 @Singleton
 class UserController @Inject()(val controllerComponents: ControllerComponents,
                                val userRepository: UserRepository,
                                val userService: UserService,
                                val jwtAuthAction: JWTAuthAction)
                               (implicit ec: ExecutionContext) extends BaseController {
-  implicit val usersJson: OFormat[User] = Json.format[User]
-  implicit val newUsersJson: OFormat[NewUser] = Json.format[NewUser]
-  implicit val loginAttemptJson: OFormat[LoginAttempt] = Json.format[LoginAttempt]
-
   def getAll: Action[AnyContent] = jwtAuthAction.async {
     userService.getAll.map(users => Ok(Json.toJson(users)))
   }
@@ -39,9 +33,9 @@ class UserController @Inject()(val controllerComponents: ControllerComponents,
 
   def register(): Action[AnyContent] = Action.async { implicit request =>
     val body = request.body.asJson
-    val user: Option[NewUser] =
+    val user: Option[UserWithoutFriends] =
       body.flatMap(
-        Json.fromJson[NewUser](_).asOpt
+        Json.fromJson[UserWithoutFriends](_).asOpt
       )
 
     user match {

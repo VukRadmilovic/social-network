@@ -17,6 +17,10 @@ class AuthService @Inject() (userRepository: UserRepository)(implicit ec: Execut
     try {
       val claim = JwtJson.decode(token, secretKey, Seq(JwtAlgorithm.HS256))
       val username = claim.get.subject.get
+      val expiry = claim.get.expiration.get
+      if (System.currentTimeMillis() - expiry > 0) {
+        return Future.successful(None)
+      }
       userRepository.getByUsername(username).map {
         case Some(_) => Some(username)
         case None => None
