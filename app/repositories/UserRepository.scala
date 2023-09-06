@@ -1,6 +1,6 @@
 package repositories
 
-import dtos.UserWithoutFriends
+import dtos.UserWithFriends
 import models.User
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
@@ -18,35 +18,35 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider) (i
   private val userTable = TableQuery[UserTable]
   private val friendshipTable = TableQuery[FriendshipTable]
 
-  def getAll: Future[Seq[User]] = {
+  def getAll: Future[Seq[UserWithFriends]] = {
     val query = userTable.result
-    val usersWithoutFriendsFuture: Future[Seq[UserWithoutFriends]] = db.run(query)
+    val usersWithoutFriendsFuture: Future[Seq[User]] = db.run(query)
 
     usersWithoutFriendsFuture.map(usersWithoutFriends =>
-      usersWithoutFriends.map(userWithoutFriends => new User(userWithoutFriends))
+      usersWithoutFriends.map(userWithoutFriends => new UserWithFriends(userWithoutFriends))
     )
   }
 
-  def getByUsername(username: String): Future[Option[User]] = {
+  def getByUsername(username: String): Future[Option[UserWithFriends]] = {
     val userWithoutFriends = db.run(userTable.filter(_.username === username).result).map(_.headOption)
 
     userWithoutFriends.map {
-      case Some(user) => Some(new User(user))
+      case Some(user) => Some(new UserWithFriends(user))
       case None => None
     }
   }
 
-  def getByEmail(email: String): Future[Option[User]] = {
+  def getByEmail(email: String): Future[Option[UserWithFriends]] = {
     val userWithoutFriends = db.run(userTable.filter(_.email === email).result).map(_.headOption)
 
     userWithoutFriends.map {
-      case Some(user) => Some(new User(user))
+      case Some(user) => Some(new UserWithFriends(user))
       case None => None
     }
   }
 
-  def create(user: User): Future[Option[User]] = {
-    val userWithoutFriends = new UserWithoutFriends(user.username, user.displayName, user.password, user.email)
+  def create(user: UserWithFriends): Future[Option[UserWithFriends]] = {
+    val userWithoutFriends = new User(user.username, user.displayName, user.password, user.email)
 
     db.run(userTable += userWithoutFriends)
       .map(_ => Some(user))
@@ -57,12 +57,12 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider) (i
       }
   }
 
-  class UserTable(tag: Tag) extends Table[UserWithoutFriends](tag, "users") {
+  class UserTable(tag: Tag) extends Table[User](tag, "users") {
     def username = column[String]("username", O.PrimaryKey)
     def displayName = column[String]("displayName")
     def password = column[String]("password")
     def email = column[String]("email", O.Unique)
-    override def * : ProvenShape[UserWithoutFriends] = (username, displayName, password, email) <> ((UserWithoutFriends.apply _).tupled, UserWithoutFriends.unapply)
+    override def * : ProvenShape[User] = (username, displayName, password, email) <> ((User.apply _).tupled, User.unapply)
   }
 
   class FriendshipTable(tag: Tag) extends Table[(String, String)](tag, "friendships") {

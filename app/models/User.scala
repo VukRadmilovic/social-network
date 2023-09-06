@@ -1,16 +1,8 @@
 package models
 
-import dtos.UserWithoutFriends
 import play.api.libs.json.{Json, OFormat}
 
-case class User(username: String, displayName: String, password: String, email: String, friends: Array[User]) {
-  def this(user: UserWithoutFriends, hashedPassword: String) = {
-    this(user.username, user.displayName, hashedPassword, user.email, Array[User]())
-  }
-  def this(user: UserWithoutFriends) = {
-    this(user.username, user.displayName, user.password, user.email, Array[User]())
-  }
-}
+case class User(username: String, displayName: String, password: String, email: String)
 
 object User {
   implicit val jsonFormat: OFormat[User] = Json.format[User]

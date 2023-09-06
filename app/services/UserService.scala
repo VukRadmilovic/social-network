@@ -1,6 +1,6 @@
 package services
 
-import dtos.{LoginAttempt, UserWithoutFriends}
+import dtos.{LoginAttempt, UserWithFriends}
 import helpers.Cryptography
 import models.User
 import play.api.libs.json.Json
@@ -15,13 +15,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class UserService @Inject() (userRepository: UserRepository,
                              authService: AuthService) (implicit ec: ExecutionContext) {
-  def getAll: Future[Seq[User]] = userRepository.getAll
+  def getAll: Future[Seq[UserWithFriends]] = userRepository.getAll
 
-  def getByUsername(username: String): Future[Option[User]] = userRepository.getByUsername(username)
+  def getByUsername(username: String): Future[Option[UserWithFriends]] = userRepository.getByUsername(username)
 
-  def getByEmail(email: String): Future[Option[User]] = userRepository.getByEmail(email)
+  def getByEmail(email: String): Future[Option[UserWithFriends]] = userRepository.getByEmail(email)
 
-  def register(user: UserWithoutFriends): Future[Either[Result, User]] = {
+  def register(user: User): Future[Either[Result, UserWithFriends]] = {
     if (user.username.isBlank || user.email.isBlank || user.displayName.isBlank || user.password.isBlank) {
       return Future.successful(Left(BadRequest(Json.obj("message" -> "Please enter all the data"))))
     }
@@ -39,7 +39,7 @@ class UserService @Inject() (userRepository: UserRepository,
         case (_, Some(_)) =>
           Left(BadRequest(Json.obj("message" -> "Email is already in use")))
         case (None, None) =>
-          val newUser = new User(user, Cryptography.hashPassword(user.password))
+          val newUser = new UserWithFriends(user, Cryptography.hashPassword(user.password))
           userRepository.create(newUser)
           Right(newUser)
       }
@@ -48,20 +48,15 @@ class UserService @Inject() (userRepository: UserRepository,
 
   def login(loginAttempt: LoginAttempt): Future[Option[String]] = {
     val userFuture = userRepository.getByUsername(loginAttempt.username)
-    println("test1")
     userFuture.map {
       case Some(user) =>
         if (Cryptography.checkPassword(loginAttempt.password, user.password)) {
-          println("test2")
           val token = authService.generateToken(user.username)
-          println("test3")
           Some(token)
         } else {
-          println("tes4")
           None
         }
       case None =>
-        println("test5")
         None
     }
   }
