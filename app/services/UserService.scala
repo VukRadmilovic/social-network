@@ -59,4 +59,8 @@ class UserService @Inject() (
       }
     })
   }
+
+  def getFriends(username: String): Future[Seq[String]] = {
+    userRepository.getFriends(username)
+  }
 }

@@ -3,3 +3,4 @@ GET     /users/:username                            controllers.UserController.g
 POST    /users/register                             controllers.UserController.register
 POST    /users/login                                controllers.UserController.login
 POST    /users/addFriends/:username1,:username2     controllers.UserController.addFriends(username1:String, username2:String)
+GET     /users/:username/friends                    controllers.UserController.getFriends(username:String)

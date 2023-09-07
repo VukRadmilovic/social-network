@@ -1,5 +1,6 @@
 package repositories
 
+import com.fasterxml.jackson.module.scala.deser.overrides.MutableList
 import exceptions.AlreadyFriendsException
 import models.User
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -7,6 +8,7 @@ import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
 import javax.inject.Inject
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
@@ -73,6 +75,23 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
         .exists
         .result)
       .map(friends => friends)
+  }
+
+  def getFriends(username: String): Future[Seq[String]] = {
+    db.run(
+        friendshipTable.filter
+        (friendship => friendship.username1 === username || friendship.username2 === username).result)
+      .map(friendTuples => {
+        var friends = Seq[String]()
+        for (friendTuple <- friendTuples) {
+          if (friendTuple._1 == username) {
+            friends = friends :+ friendTuple._2
+          } else {
+            friends = friends :+ friendTuple._1
+          }
+        }
+        friends
+      })
   }
 
   class UserTable(tag: Tag) extends Table[User](tag, "users") {

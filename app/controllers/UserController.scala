@@ -70,4 +70,14 @@ class UserController @Inject() (
           .recover(e => BadRequest(Json.obj("message" -> e.getMessage)))
       }
     }
+
+  def getFriends(username: String): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val requesterUsername = request.attrs.get(TokenUsername).getOrElse("")
+      if (requesterUsername != username) {
+        Future.successful(Forbidden)
+      } else {
+        userService.getFriends(username).map(friends => Ok(Json.toJson(friends)))
+      }
+  }
 }
