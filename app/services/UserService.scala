@@ -25,10 +25,7 @@ class UserService @Inject() (
     userValidationService
       .validate(user)
       .flatMap(_ => {
-        val newUser = new UserWithFriends(
-          user,
-          Cryptography.hashPassword(user.password)
-        )
+        val newUser = UserWithFriends(user, Cryptography.hashPassword(user.password))
         userRepository.create(newUser)
       })
       .recoverWith(e => {

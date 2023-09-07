@@ -40,7 +40,7 @@ class UserValidationService @Inject() (
             if (used) {
               Future.failed(ValidationException("Email is already in use"))
             } else {
-              Future.successful()
+              Future.successful(())
             }
           })
         }

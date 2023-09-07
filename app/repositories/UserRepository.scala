@@ -20,41 +20,40 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
 
   def getAll: Future[Seq[UserWithFriends]] = {
     val query = userTable.result
-    val usersWithoutFriendsFuture: Future[Seq[User]] = db.run(query)
+    val userFuture: Future[Seq[User]] = db.run(query)
 
-    usersWithoutFriendsFuture.map(usersWithoutFriends =>
-      usersWithoutFriends.map(userWithoutFriends =>
-        new UserWithFriends(userWithoutFriends)
+    userFuture.map(users =>
+      users.map(user => UserWithFriends(user)
       )
     )
   }
 
   def getByUsername(username: String): Future[Option[UserWithFriends]] = {
-    val userWithoutFriends =
+    val user =
       db.run(userTable.filter(_.username === username).result).map(_.headOption)
 
-    userWithoutFriends.map {
-      case Some(user) => Some(new UserWithFriends(user))
+    user.map {
+      case Some(userWithFriends) => Some(UserWithFriends(userWithFriends))
       case None       => None
     }
   }
 
   def getByEmail(email: String): Future[Option[UserWithFriends]] = {
-    val userWithoutFriends =
+    val user =
       db.run(userTable.filter(_.email === email).result).map(_.headOption)
 
-    userWithoutFriends.map {
-      case Some(user) => Some(new UserWithFriends(user))
+    user.map {
+      case Some(userWithFriends) => Some(UserWithFriends(userWithFriends))
       case None       => None
     }
   }
 
-  def create(user: UserWithFriends): Future[UserWithFriends] = {
-    val userWithoutFriends =
-      new User(user.username, user.displayName, user.password, user.email)
+  def create(userWithFriends: UserWithFriends): Future[UserWithFriends] = {
+    val user =
+      new User(userWithFriends.username, userWithFriends.displayName, userWithFriends.password, userWithFriends.email)
 
-    db.run(userTable += userWithoutFriends)
-      .map(_ => user)
+    db.run(userTable += user)
+      .map(_ => userWithFriends)
   }
 
   class UserTable(tag: Tag) extends Table[User](tag, "users") {

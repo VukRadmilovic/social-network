@@ -19,11 +19,12 @@ class AuthService @Inject() (userRepository: UserRepository)(implicit ec: Execut
       val username = claim.get.subject.get
       val expiry = claim.get.expiration.get
       if (System.currentTimeMillis() - expiry > 0) {
-        return Future.successful(None)
-      }
-      userRepository.getByUsername(username).map {
-        case Some(_) => Some(username)
-        case None => None
+        Future.successful(None)
+      } else {
+        userRepository.getByUsername(username).map {
+          case Some(_) => Some(username)
+          case None => None
+        }
       }
     } catch {
       case _: Throwable => Future.successful(None)
