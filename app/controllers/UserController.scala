@@ -2,6 +2,7 @@ package controllers
 
 import actions.JWTAuthAction
 import dtos.{LoginAttempt, UserDTO}
+import exceptions.ValidationException
 import helpers.RequestKeys.TokenUsername
 import models.User
 import play.api.libs.json._
@@ -43,7 +44,9 @@ class UserController @Inject() (
       userService
         .register(user)
         .map(newUser => Created(Json.toJson(UserDTO(newUser))))
-        .recover(e => BadRequest(Json.obj("message" -> e.getMessage)))
+        .recover {
+          case e: ValidationException => BadRequest(Json.obj("message" -> e.getMessage))
+        }
   }
 
   def login(): Action[LoginAttempt] = Action.async(parse.json[LoginAttempt]) {
@@ -69,7 +72,9 @@ class UserController @Inject() (
         userService
           .addFriends(username1, username2)
           .map(_ => NoContent)
-          .recover(e => BadRequest(Json.obj("message" -> e.getMessage)))
+          .recover {
+            case e: ValidationException => BadRequest(Json.obj("message" -> e.getMessage))
+          }
       }
     }
 

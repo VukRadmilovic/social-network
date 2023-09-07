@@ -1,7 +1,7 @@
 package services
 
 import dtos.LoginAttempt
-import exceptions.AlreadyFriendsException
+import exceptions.ValidationException
 import models.User
 import org.mindrot.jbcrypt.BCrypt
 import repositories.UserRepository
@@ -29,9 +29,6 @@ class UserService @Inject() (
         val newUser = User(user.username, user.displayName, BCrypt.hashpw(user.password, BCrypt.gensalt()), user.email)
         userRepository.create(newUser)
       })
-      .recoverWith(e => {
-        Future.failed(e)
-      })
   }
 
   def login(loginAttempt: LoginAttempt): Future[Option[String]] = {
@@ -52,10 +49,9 @@ class UserService @Inject() (
   def addFriends(username1: String, username2: String): Future[Unit] = {
     userRepository.areFriends(username1, username2).map(friends => {
       if (friends) {
-        throw AlreadyFriendsException()
+        throw ValidationException("These users are already friends")
       } else {
         userRepository.addFriends(username1, username2)
-          .recover(e => throw e)
       }
     })
   }
