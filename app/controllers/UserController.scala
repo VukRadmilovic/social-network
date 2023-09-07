@@ -40,7 +40,7 @@ class UserController @Inject() (
       userService
         .register(user)
         .map(newUser => Created(Json.toJson(newUser)))
-        .recover(e => BadRequest(e.getMessage))
+        .recover(e => BadRequest(Json.obj("message" -> e.getMessage)))
   }
 
   def login(): Action[LoginAttempt] = Action.async(parse.json[LoginAttempt]) {
@@ -51,7 +51,7 @@ class UserController @Inject() (
         case Some(token) =>
           Ok(Json.obj("token" -> token))
         case None =>
-          BadRequest("Your username or password is incorrect")
+          BadRequest(Json.obj("message" -> "Your username or password is incorrect"))
       }
   }
 }
