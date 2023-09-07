@@ -1,12 +1,10 @@
 package repositories
 
-import dtos.UserWithFriends
 import exceptions.AlreadyFriendsException
 import models.User
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
-import slick.sql.SqlProfile.ColumnOption.SqlType
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,44 +18,36 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
   private val userTable = TableQuery[UserTable]
   private val friendshipTable = TableQuery[FriendshipTable]
 
-  def getAll: Future[Seq[UserWithFriends]] = {
+  def getAll: Future[Seq[User]] = {
     val query = userTable.result
     val userFuture: Future[Seq[User]] = db.run(query)
 
-    userFuture.map(users => users.map(user => UserWithFriends(user)))
+    userFuture.map(users => users.map(user => user))
   }
 
-  def getByUsername(username: String): Future[Option[UserWithFriends]] = {
-    val user =
+  def getByUsername(username: String): Future[Option[User]] = {
+    val userFuture =
       db.run(userTable.filter(_.username === username).result).map(_.headOption)
 
-    user.map {
-      case Some(userWithFriends) => Some(UserWithFriends(userWithFriends))
-      case None                  => None
+    userFuture.map {
+      case Some(user) => Some(user)
+      case None       => None
     }
   }
 
-  def getByEmail(email: String): Future[Option[UserWithFriends]] = {
-    val user =
+  def getByEmail(email: String): Future[Option[User]] = {
+    val userFuture =
       db.run(userTable.filter(_.email === email).result).map(_.headOption)
 
-    user.map {
-      case Some(userWithFriends) => Some(UserWithFriends(userWithFriends))
-      case None                  => None
+    userFuture.map {
+      case Some(user) => Some(user)
+      case None       => None
     }
   }
 
-  def create(userWithFriends: UserWithFriends): Future[UserWithFriends] = {
-    val user =
-      new User(
-        userWithFriends.username,
-        userWithFriends.displayName,
-        userWithFriends.password,
-        userWithFriends.email
-      )
-
+  def create(user: User): Future[User] = {
     db.run(userTable += user)
-      .map(_ => userWithFriends)
+      .map(_ => user)
   }
 
   def addFriends(username1: String, username2: String): Future[Unit] = {
@@ -72,6 +62,17 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
       .recover(_ => {
         throw AlreadyFriendsException()
       })
+  }
+
+  def areFriends(username1: String, username2: String): Future[Boolean] = {
+    db.run(
+        friendshipTable
+        .filter(friendship =>
+          (friendship.username1 === username1 && friendship.username2 === username2) ||
+          (friendship.username2 === username1 && friendship.username1 === username2))
+        .exists
+        .result)
+      .map(friends => friends)
   }
 
   class UserTable(tag: Tag) extends Table[User](tag, "users") {

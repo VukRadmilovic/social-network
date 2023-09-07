@@ -1,6 +1,6 @@
 package services
 
-import dtos.{LoginAttempt, UserWithFriends}
+import dtos.LoginAttempt
 import exceptions.AlreadyFriendsException
 import helpers.Cryptography
 import models.User
@@ -14,19 +14,19 @@ class UserService @Inject() (
     authService: AuthService,
     userValidationService: UserValidationService
 )(implicit ec: ExecutionContext) {
-  def getAll: Future[Seq[UserWithFriends]] = userRepository.getAll
+  def getAll: Future[Seq[User]] = userRepository.getAll
 
-  def getByUsername(username: String): Future[Option[UserWithFriends]] =
+  def getByUsername(username: String): Future[Option[User]] =
     userRepository.getByUsername(username)
 
-  def getByEmail(email: String): Future[Option[UserWithFriends]] =
+  def getByEmail(email: String): Future[Option[User]] =
     userRepository.getByEmail(email)
 
-  def register(user: User): Future[UserWithFriends] = {
+  def register(user: User): Future[User] = {
     userValidationService
       .validate(user)
       .flatMap(_ => {
-        val newUser = UserWithFriends(user, Cryptography.hashPassword(user.password))
+        val newUser = User(user.username, user.displayName, Cryptography.hashPassword(user.password), user.email)
         userRepository.create(newUser)
       })
       .recoverWith(e => {
@@ -50,7 +50,13 @@ class UserService @Inject() (
   }
 
   def addFriends(username1: String, username2: String): Future[Unit] = {
-    userRepository.addFriends(username1, username2)
-      .recover(e => throw e)
+    userRepository.areFriends(username1, username2).map(friends => {
+      if (friends) {
+        throw AlreadyFriendsException()
+      } else {
+        userRepository.addFriends(username1, username2)
+          .recover(e => throw e)
+      }
+    })
   }
 }
