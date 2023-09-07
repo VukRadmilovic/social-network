@@ -1,8 +1,7 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.LoginAttempt
-import exceptions.AlreadyFriendsException
+import dtos.{LoginAttempt, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.User
 import play.api.libs.json._
@@ -22,14 +21,17 @@ class UserController @Inject() (
 )(implicit ec: ExecutionContext)
     extends BaseController {
   def getAll: Action[AnyContent] = jwtAuthAction.async {
-    userService.getAll.map(users => Ok(Json.toJson(users)))
+    userService.getAll.map(users => {
+      val userDTOs = users.map(UserDTO(_))
+      Ok(Json.toJson(userDTOs))
+    })
   }
 
   def getByUsername(username: String): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       println(request.attrs.get(TokenUsername).getOrElse(""))
       userService.getByUsername(username).map {
-        case Some(user) => Ok(Json.toJson(user))
+        case Some(user) => Ok(Json.toJson(UserDTO(user)))
         case None       => NotFound
       }
     }
@@ -40,7 +42,7 @@ class UserController @Inject() (
 
       userService
         .register(user)
-        .map(newUser => Created(Json.toJson(newUser)))
+        .map(newUser => Created(Json.toJson(UserDTO(newUser))))
         .recover(e => BadRequest(Json.obj("message" -> e.getMessage)))
   }
 
