@@ -2,8 +2,8 @@ package services
 
 import dtos.LoginAttempt
 import exceptions.AlreadyFriendsException
-import helpers.Cryptography
 import models.User
+import org.mindrot.jbcrypt.BCrypt
 import repositories.UserRepository
 
 import javax.inject.Inject
@@ -26,7 +26,7 @@ class UserService @Inject() (
     userValidationService
       .validate(user)
       .flatMap(_ => {
-        val newUser = User(user.username, user.displayName, Cryptography.hashPassword(user.password), user.email)
+        val newUser = User(user.username, user.displayName, BCrypt.hashpw(user.password, BCrypt.gensalt()), user.email)
         userRepository.create(newUser)
       })
       .recoverWith(e => {
@@ -38,7 +38,7 @@ class UserService @Inject() (
     val userFuture = userRepository.getByUsername(loginAttempt.username)
     userFuture.map {
       case Some(user) =>
-        if (Cryptography.checkPassword(loginAttempt.password, user.password)) {
+        if (BCrypt.checkpw(loginAttempt.password, user.password)) {
           val token = authService.generateToken(user.username)
           Some(token)
         } else {
