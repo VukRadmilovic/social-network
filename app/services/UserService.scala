@@ -1,6 +1,7 @@
 package services
 
 import dtos.{LoginAttempt, UserWithFriends}
+import exceptions.AlreadyFriendsException
 import helpers.Cryptography
 import models.User
 import repositories.UserRepository
@@ -46,5 +47,10 @@ class UserService @Inject() (
       case None =>
         None
     }
+  }
+
+  def addFriends(username1: String, username2: String): Future[Unit] = {
+    userRepository.addFriends(username1, username2)
+      .recover(e => throw e)
   }
 }

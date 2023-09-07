@@ -1,4 +1,5 @@
-GET     /users                       controllers.UserController.getAll
-GET     /users/:username             controllers.UserController.getByUsername(username:String)
-POST    /users/register              controllers.UserController.register
-POST    /users/login                 controllers.UserController.login
+GET     /users                                      controllers.UserController.getAll
+GET     /users/:username                            controllers.UserController.getByUsername(username:String)
+POST    /users/register                             controllers.UserController.register
+POST    /users/login                                controllers.UserController.login
+POST    /users/addFriends/:username1,:username2     controllers.UserController.addFriends(username1:String, username2:String)
