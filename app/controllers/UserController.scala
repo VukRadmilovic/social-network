@@ -44,9 +44,6 @@ class UserController @Inject() (
       userService
         .register(user)
         .map(newUser => Created(Json.toJson(UserDTO(newUser))))
-        .recover {
-          case e: ValidationException => BadRequest(Json.obj("message" -> e.getMessage))
-        }
   }
 
   def login(): Action[LoginAttempt] = Action.async(parse.json[LoginAttempt]) {
@@ -65,6 +62,9 @@ class UserController @Inject() (
 
   def addFriends(username1: String, username2: String): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
+      if (username1 == username2) {
+        throw ValidationException("You cannot add yourself as a friend")
+      }
       val requesterUsername = request.attrs.get(TokenUsername).getOrElse("")
       if (requesterUsername != username1) {
         Future.successful(Forbidden)
@@ -72,9 +72,6 @@ class UserController @Inject() (
         userService
           .addFriends(username1, username2)
           .map(_ => NoContent)
-          .recover {
-            case e: ValidationException => BadRequest(Json.obj("message" -> e.getMessage))
-          }
       }
     }
 
