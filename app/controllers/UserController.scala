@@ -4,11 +4,11 @@ import actions.JWTAuthAction
 import dtos.{LoginAttempt, UserDTO}
 import exceptions.ValidationException
 import helpers.RequestKeys.TokenUsername
-import models.User
+import models.{FriendRequest, User}
 import play.api.libs.json._
 import play.api.mvc._
 import repositories.UserRepository
-import services.UserService
+import services.{FriendRequestService, UserService}
 
 import javax.inject._
 import scala.concurrent.{ExecutionContext, Future}
@@ -18,6 +18,7 @@ class UserController @Inject() (
     val controllerComponents: ControllerComponents,
     val userRepository: UserRepository,
     val userService: UserService,
+    val friendRequestService: FriendRequestService,
     val jwtAuthAction: JWTAuthAction
 )(implicit ec: ExecutionContext)
     extends BaseController {
@@ -30,7 +31,6 @@ class UserController @Inject() (
 
   def getByUsername(username: String): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
-      println(request.attrs.get(TokenUsername).getOrElse(""))
       userService.getByUsername(username).map {
         case Some(user) => Ok(Json.toJson(UserDTO(user)))
         case None       => NotFound
@@ -83,5 +83,13 @@ class UserController @Inject() (
       } else {
         userService.getFriends(username).map(friends => Ok(Json.toJson(friends)))
       }
+  }
+
+  def sendFriendRequest(username: String): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val senderUsername = request.attrs.get(TokenUsername).get
+      val friendRequest = FriendRequest.create(senderUsername, username)
+      friendRequestService.sendRequest(friendRequest)
+        .map(returnedRequest => Ok(Json.toJson(returnedRequest)))
   }
 }

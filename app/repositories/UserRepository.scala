@@ -9,8 +9,8 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
-    implicit ec: ExecutionContext
-) extends HasDatabaseConfigProvider[JdbcProfile] {
+    implicit ec: ExecutionContext)
+    extends HasDatabaseConfigProvider[JdbcProfile] {
 
   import profile.api._
 
