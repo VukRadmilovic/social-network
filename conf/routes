@@ -1,7 +1,7 @@
+GET     /users/friends                              controllers.UserController.getFriends()
 GET     /users                                      controllers.UserController.getAll
 GET     /users/:username                            controllers.UserController.getByUsername(username:String)
-POST    /users/register                             controllers.UserController.register
-POST    /users/login                                controllers.UserController.login
-POST    /users/addFriends/:username1,:username2     controllers.UserController.addFriends(username1:String, username2:String)
-GET     /users/:username/friends                    controllers.UserController.getFriends(username:String)
+POST    /users/register                             controllers.UserController.register()
+POST    /users/login                                controllers.UserController.login()
+POST    /users/addFriends/:username2                controllers.UserController.addFriends(username2:String)
 POST    /users/requests/:username                   controllers.UserController.sendFriendRequest(username:String)

@@ -15,17 +15,11 @@ class UserValidationService @Inject() (
   }
 
   private def usernameInUse(username: String): Future[Boolean] = {
-    userRepository.getByUsername(username).map {
-      case Some(_) => true
-      case None    => false
-    }
+    userRepository.getByUsername(username).map(userOption => userOption.isDefined)
   }
 
   private def emailInUse(email: String): Future[Boolean] = {
-    userRepository.getByEmail(email).map {
-      case Some(_) => true
-      case None    => false
-    }
+    userRepository.getByEmail(email).map(emailOption => emailOption.isDefined)
   }
 
   def validate(user: User): Future[Unit] = {

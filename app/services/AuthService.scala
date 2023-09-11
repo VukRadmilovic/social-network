@@ -1,15 +1,13 @@
 package services
 
 import pdi.jwt.{JwtAlgorithm, JwtJson}
-
-import javax.inject.Inject
 import play.api.libs.json.Json
-import repositories.UserRepository
 
 import java.time.Clock
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthService @Inject() (userRepository: UserRepository)(implicit ec: ExecutionContext) {
+class AuthService @Inject() (implicit ec: ExecutionContext) {
   implicit val clock: Clock = Clock.systemUTC
   private val secretKey = "01c0d934ee75f196cdfed19207a549aa60fcac4194011602e4b12f7b1cd5e17e"
 
@@ -21,10 +19,7 @@ class AuthService @Inject() (userRepository: UserRepository)(implicit ec: Execut
       if (System.currentTimeMillis() - expiry > 0) {
         Future.successful(None)
       } else {
-        userRepository.getByUsername(username).map {
-          case Some(_) => Some(username)
-          case None => None
-        }
+        Future.successful(Some(username))
       }
     } catch {
       case _: Throwable => Future.successful(None)

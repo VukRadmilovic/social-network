@@ -1,6 +1,7 @@
 package repositories
 
 import models.User
+import play.api.Logging
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
@@ -10,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     implicit ec: ExecutionContext)
-    extends HasDatabaseConfigProvider[JdbcProfile] {
+    extends HasDatabaseConfigProvider[JdbcProfile] with Logging {
 
   import profile.api._
 
@@ -18,40 +19,23 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
   private val friendshipTable = TableQuery[FriendshipTable]
 
   def getAll: Future[Seq[User]] = {
-    val query = userTable.result
-    val userFuture: Future[Seq[User]] = db.run(query)
-
-    userFuture.map(users => users.map(user => user))
+    db.run(userTable.result)
   }
 
   def getByUsername(username: String): Future[Option[User]] = {
-    val userFuture =
-      db.run(userTable.filter(_.username === username).result).map(_.headOption)
-
-    userFuture.map {
-      case Some(user) => Some(user)
-      case None       => None
-    }
+    db.run(userTable.filter(_.username === username).result).map(_.headOption)
   }
 
   def getByEmail(email: String): Future[Option[User]] = {
-    val userFuture =
-      db.run(userTable.filter(_.email === email).result).map(_.headOption)
-
-    userFuture.map {
-      case Some(user) => Some(user)
-      case None       => None
-    }
+    db.run(userTable.filter(_.email === email).result).map(_.headOption)
   }
 
   def create(user: User): Future[User] = {
-    db.run(userTable += user)
-      .map(_ => user)
+    db.run(userTable += user).map(_ => user)
   }
 
   def addFriends(username1: String, username2: String): Future[Unit] = {
-    db.run(friendshipTable += (username1, username2))
-      .map(_ => Future.successful(()))
+    db.run(friendshipTable += (username1, username2)).map(_ => ())
   }
 
   def areFriends(username1: String, username2: String): Future[Boolean] = {
@@ -62,24 +46,16 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
           (friendship.username2 === username1 && friendship.username1 === username2))
         .exists
         .result)
-      .map(friends => friends)
   }
 
   def getFriends(username: String): Future[Seq[String]] = {
     db.run(
-        friendshipTable.filter
-        (friendship => friendship.username1 === username || friendship.username2 === username).result)
-      .map(friendTuples => {
-        var friends = Seq[String]()
-        for (friendTuple <- friendTuples) {
-          if (friendTuple._1 == username) {
-            friends = friends :+ friendTuple._2
-          } else {
-            friends = friends :+ friendTuple._1
-          }
-        }
-        friends
-      })
+      friendshipTable
+        .filter(friendship => friendship.username1 === username || friendship.username2 === username)
+        .result
+    ).map(friendTuples => friendTuples.flatMap { case (user1, user2) =>
+      Seq(user1, user2).filterNot(_ == username)
+    })
   }
 
   class UserTable(tag: Tag) extends Table[User](tag, "users") {

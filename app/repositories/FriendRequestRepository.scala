@@ -1,7 +1,7 @@
 package repositories
 
 import models.RequestStatus.RequestStatus
-import models.{FriendRequest, RequestStatus, User}
+import models.{FriendRequest, RequestStatus}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape

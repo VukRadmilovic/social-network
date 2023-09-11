@@ -1,6 +1,7 @@
 package actions
 
 import helpers.RequestKeys.TokenUsername
+import play.api.libs.json.Json
 import play.api.mvc.Results.Unauthorized
 import play.api.mvc._
 import services.AuthService
@@ -23,9 +24,10 @@ class JWTAuthAction @Inject()(
             case Some(username) =>
               val requestWithTokenUsername = request.addAttr(TokenUsername, username)
               block(requestWithTokenUsername)
-            case None => Future.successful(Unauthorized)
+            case None => Future.successful(Unauthorized(Json.obj(
+              "message" -> "Authentication failed: invalid or expired token")))
           }
       case _ =>
-        Future.successful(Unauthorized)
+        Future.successful(Unauthorized(Json.obj("message" -> "Authentication failed: missing token")))
     }
 }
