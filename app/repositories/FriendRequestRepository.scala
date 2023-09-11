@@ -1,6 +1,6 @@
 package repositories
 
-import models.RequestStatus.RequestStatus
+import models.RequestStatus.{Pending, RequestStatus}
 import models.{FriendRequest, RequestStatus}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
@@ -36,6 +36,32 @@ class FriendRequestRepository @Inject() (
 
   def getByReceiver(receiver: String): Future[Seq[FriendRequest]] = {
     db.run(friendRequestTable.filter(_.receiver === receiver).result)
+  }
+
+  def pendingRequestFromSenderExists(newRequest: FriendRequest): Future[Boolean] = {
+    db.run(
+      friendRequestTable
+        .filter(existingRequest =>
+          existingRequest.sender === newRequest.sender &&
+            existingRequest.receiver === newRequest.receiver &&
+            existingRequest.status === Pending
+        )
+        .exists
+        .result
+    )
+  }
+
+  def pendingRequestToSenderExists(newRequest: FriendRequest): Future[Boolean] = {
+    db.run(
+      friendRequestTable
+        .filter(existingRequest =>
+          existingRequest.sender === newRequest.receiver &&
+            existingRequest.receiver === newRequest.sender &&
+            existingRequest.status === Pending
+        )
+        .exists
+        .result
+    )
   }
 
   def update(friendRequest: FriendRequest): Future[FriendRequest] = {

@@ -47,22 +47,7 @@ class UserService @Inject() (
   }
 
   def addFriends(username1: String, username2: String): Future[Unit] = {
-    if (username1 == username2) {
-      Future.failed(ValidationException("You cannot add yourself as a friend"))
-    } else {
-      userRepository.getByUsername(username2).flatMap {
-        case Some(_) =>
-          userRepository.areFriends(username1, username2).flatMap { friends =>
-            if (friends) {
-              Future.failed(ValidationException("These users are already friends"))
-            } else {
-              userRepository.addFriends(username1, username2)
-            }
-          }
-        case None =>
-          Future.failed(ValidationException("The user you are trying to add does not exist"))
-      }
-    }
+    userRepository.addFriends(username1, username2)
   }
 
   def getFriends(username: String): Future[Seq[String]] = {
