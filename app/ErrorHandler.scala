@@ -1,4 +1,4 @@
-import exceptions.ValidationException
+import exceptions.{AuthorizationException, ValidationException}
 import play.api.http.HttpErrorHandler
 import play.api.libs.json.Json
 import play.api.mvc._
@@ -19,6 +19,7 @@ class ErrorHandler extends HttpErrorHandler with Logging {
   def onServerError(request: RequestHeader, exception: Throwable): Future[Result] = {
     exception match {
       case _: ValidationException => Future.successful(BadRequest(Json.obj("message" -> exception.getMessage)))
+      case _: AuthorizationException => Future.successful(Forbidden(Json.obj("message" -> exception.getMessage)))
       case _ =>
         logger.error("Error caught in global error handler", exception)
         Future.successful(InternalServerError)

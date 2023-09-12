@@ -58,6 +58,18 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     })
   }
 
+  def changeDisplayName(username: String, newDisplayName: String): Future[Unit] = {
+    db.run(userTable.filter(_.username === username).map(_.displayName).update(newDisplayName)).map(_ => ())
+  }
+
+  def changePassword(username: String, newPassword: String): Future[Unit] = {
+    db.run(userTable.filter(_.username === username).map(_.password).update(newPassword)).map(_ => ())
+  }
+
+  def changeEmail(username: String, newEmail: String): Future[Unit] = {
+    db.run(userTable.filter(_.username === username).map(_.email).update(newEmail)).map(_ => ())
+  }
+
   class UserTable(tag: Tag) extends Table[User](tag, "users") {
     def username = column[String]("username", O.PrimaryKey)
     def displayName = column[String]("displayName")

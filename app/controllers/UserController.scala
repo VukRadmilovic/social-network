@@ -1,7 +1,8 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{LoginAttempt, UserDTO}
+import dtos.{EmailChangeDTO, LoginAttempt, PasswordChangeDTO, UserDTO}
+import helpers.RequestKeys.TokenUsername
 import models.User
 import play.api.Logging
 import play.api.libs.json._
@@ -35,6 +36,30 @@ class UserController @Inject() (
         case Some(user) => Ok(Json.toJson(UserDTO(user)))
         case None       => NotFound
       }
+    }
+
+  def changeDisplayName(newDisplayName: String): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+      userService.changeDisplayName(username, newDisplayName).map(_ => NoContent)
+    }
+
+  def changePassword(): Action[PasswordChangeDTO] =
+    jwtAuthAction.async(parse.json[PasswordChangeDTO]) { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+      val passwordChangeDTO = request.body
+
+      userService.changePassword(username, passwordChangeDTO.oldPassword, passwordChangeDTO.newPassword)
+        .map(_ => NoContent)
+    }
+
+  def changeEmail(): Action[EmailChangeDTO] =
+    jwtAuthAction.async(parse.json[EmailChangeDTO]) { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+      val emailChangeDTO = request.body
+
+      userService.changeEmail(username, emailChangeDTO.currentPassword, emailChangeDTO.newEmail)
+        .map(_ => NoContent)
     }
 
   def register(): Action[User] =
