@@ -16,6 +16,9 @@ class UserService @Inject() (
 )(implicit ec: ExecutionContext) {
   def getAll: Future[Seq[User]] = userRepository.getAll
 
+  def getByUsernameOrDisplayNameStartsWith(name: String): Future[Seq[User]] =
+    userRepository.getByUsernameOrDisplayNameStartsWith(name)
+
   def getByUsername(username: String): Future[Option[User]] =
     userRepository.getByUsername(username)
 

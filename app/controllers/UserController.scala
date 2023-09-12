@@ -30,6 +30,13 @@ class UserController @Inject() (
       })
     }
 
+  def getByUsernameOrDisplayNameStartsWith(name: String): Action[AnyContent] =
+    jwtAuthAction.async {
+      userService.getByUsernameOrDisplayNameStartsWith(name.toLowerCase).map(users => {
+        Ok(Json.toJson(users.map(UserDTO(_))))
+      })
+    }
+
   def getByUsername(username: String): Action[AnyContent] =
     jwtAuthAction.async {
       userService.getByUsername(username).map {

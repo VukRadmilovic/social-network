@@ -3,6 +3,7 @@ GET     /users/requests/received                    controllers.FriendController
 GET     /users/requests/sent                        controllers.FriendController.getSentRequests()
 GET     /users                                      controllers.UserController.getAll
 GET     /users/:username                            controllers.UserController.getByUsername(username:String)
+GET     /users/find/:name                           controllers.UserController.getByUsernameOrDisplayNameStartsWith(name:String)
 DELETE  /users/requests/cancel/:id                  controllers.FriendController.cancelRequest(id:Long)
 PUT     /users/requests/reject/:id                  controllers.FriendController.rejectRequest(id:Long)
 PUT     /users/displayName/:newDisplayName          controllers.UserController.changeDisplayName(newDisplayName:String)

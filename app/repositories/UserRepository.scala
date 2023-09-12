@@ -22,6 +22,11 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     db.run(userTable.result)
   }
 
+  def getByUsernameOrDisplayNameStartsWith(name: String): Future[Seq[User]] = {
+    db.run(userTable.filter(user =>
+      user.username.toLowerCase.startsWith(name) || user.displayName.toLowerCase.startsWith(name)).result)
+  }
+
   def getByUsername(username: String): Future[Option[User]] = {
     db.run(userTable.filter(_.username === username).result).map(_.headOption)
   }
