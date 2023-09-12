@@ -32,22 +32,12 @@ class UserService @Inject() (
   }
 
   def login(loginAttempt: LoginAttempt): Future[Option[String]] = {
-    val userFuture = userRepository.getByUsername(loginAttempt.username)
-    userFuture.map {
-      case Some(user) =>
-        if (BCrypt.checkpw(loginAttempt.password, user.password)) {
-          val token = authService.generateToken(user.username)
-          Some(token)
-        } else {
-          None
-        }
-      case None =>
-        None
+    userRepository.getByUsername(loginAttempt.username).flatMap {
+      case Some(user) if BCrypt.checkpw(loginAttempt.password, user.password) =>
+        Future.successful(Some(authService.generateToken(user.username)))
+      case _ =>
+        Future.successful(None)
     }
-  }
-
-  def addFriends(username1: String, username2: String): Future[Unit] = {
-    userRepository.addFriends(username1, username2)
   }
 
   def getFriends(username: String): Future[Seq[String]] = {

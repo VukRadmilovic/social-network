@@ -1,17 +1,16 @@
 package models
 
 import models.RequestStatus.RequestStatus
+import play.api.libs.json.{Json, OFormat, Reads}
 
 import java.time.LocalDateTime
-import play.api.libs.json.{Json, OFormat, Reads}
 
 case class FriendRequest(
     id: Long,
     sender: String,
     receiver: String,
     status: RequestStatus,
-    created: LocalDateTime,
-    updated: Option[LocalDateTime]
+    created: LocalDateTime
 )
 
 object FriendRequest {
@@ -23,8 +22,7 @@ object FriendRequest {
       sender,
       receiver,
       RequestStatus.Pending,
-      LocalDateTime.now(),
-      None
+      LocalDateTime.now
     )
   }
 }
@@ -35,4 +33,9 @@ object RequestStatus extends Enumeration {
 
   implicit val statusReads: Reads[models.RequestStatus.Value] =
     Reads.enumNameReads(RequestStatus)
+}
+
+object RequestResolution extends Enumeration {
+  type RequestResolution = Value
+  val Accept, Reject, Cancel = Value
 }

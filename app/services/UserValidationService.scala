@@ -26,19 +26,13 @@ class UserValidationService @Inject() (
     if (missingData(user)) {
       Future.failed(ValidationException("Missing data"))
     } else {
-      usernameInUse(user.username).flatMap(used => {
-        if (used) {
-          Future.failed(ValidationException("Username is already in use"))
-        } else {
-          emailInUse(user.email).flatMap(used => {
-            if (used) {
-              Future.failed(ValidationException("Email is already in use"))
-            } else {
-              Future.successful(())
-            }
-          })
-        }
-      })
+      for {
+        usernameUsed <- usernameInUse(user.username)
+        emailUsed <- emailInUse(user.email)
+        _ <- if (usernameUsed) Future.failed(ValidationException("Username is already in use"))
+        else if (emailUsed) Future.failed(ValidationException("Email is already in use"))
+        else Future.successful(())
+      } yield ()
     }
   }
 }

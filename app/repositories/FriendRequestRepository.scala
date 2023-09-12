@@ -2,18 +2,20 @@ package repositories
 
 import models.RequestStatus.{Pending, RequestStatus}
 import models.{FriendRequest, RequestStatus}
+import play.api.Logging
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class FriendRequestRepository @Inject() (
     val dbConfigProvider: DatabaseConfigProvider
 )(implicit ec: ExecutionContext)
-    extends HasDatabaseConfigProvider[JdbcProfile] {
+    extends HasDatabaseConfigProvider[JdbcProfile] with Logging {
 
   import profile.api._
 
@@ -25,9 +27,8 @@ class FriendRequestRepository @Inject() (
       s => RequestStatus.withName(s)
     )
 
-  def send(friendRequest: FriendRequest): Future[FriendRequest] = {
-    db.run(friendRequestTable += friendRequest)
-      .map(_ => friendRequest)
+  def send(friendRequest: FriendRequest): Future[Unit] = {
+    db.run(friendRequestTable += friendRequest).map(_ => ())
   }
 
   def getBySender(sender: String): Future[Seq[FriendRequest]] = {
@@ -38,55 +39,63 @@ class FriendRequestRepository @Inject() (
     db.run(friendRequestTable.filter(_.receiver === receiver).result)
   }
 
-  def pendingRequestFromSenderExists(newRequest: FriendRequest): Future[Boolean] = {
+  def getFriendRequestById(id: Long): Future[Option[FriendRequest]] = {
+    db.run(friendRequestTable.filter(_.id === id).result.headOption)
+  }
+
+  private def pendingRequestExists(sender: String, receiver: String): Future[Boolean] = {
     db.run(
       friendRequestTable
         .filter(existingRequest =>
-          existingRequest.sender === newRequest.sender &&
-            existingRequest.receiver === newRequest.receiver &&
+          existingRequest.sender === sender &&
+            existingRequest.receiver === receiver &&
             existingRequest.status === Pending
         )
         .exists
         .result
     )
+  }
+
+  def pendingRequestFromSenderExists(newRequest: FriendRequest): Future[Boolean] = {
+    pendingRequestExists(newRequest.sender, newRequest.receiver)
   }
 
   def pendingRequestToSenderExists(newRequest: FriendRequest): Future[Boolean] = {
-    db.run(
-      friendRequestTable
-        .filter(existingRequest =>
-          existingRequest.sender === newRequest.receiver &&
-            existingRequest.receiver === newRequest.sender &&
-            existingRequest.status === Pending
-        )
-        .exists
-        .result
-    )
+    pendingRequestExists(newRequest.receiver, newRequest.sender)
   }
 
-  def update(friendRequest: FriendRequest): Future[FriendRequest] = {
-    db.run(
-      friendRequestTable.filter(_.id === friendRequest.id).update(friendRequest)
-    ).map(_ => friendRequest)
+  private def update(id: Long, status: RequestStatus): Future[Unit] = {
+    db.run(friendRequestTable.filter(_.id === id).map(_.status).update(status)).map(_ => ())
   }
 
-  def delete(id: Long): Future[Unit] = {
-    db.run(friendRequestTable.filter(_.id === id).delete)
-      .map(_ => ())
+  def reject(id: Long): Future[Unit] = {
+    update(id, RequestStatus.Rejected)
   }
 
-  class FriendRequestTable(tag: Tag)
+  def accept(id: Long): Future[Unit] = {
+    update(id, RequestStatus.Accepted)
+  }
+
+  def cancel(id: Long): Future[Unit] = {
+    db.run(friendRequestTable.filter(_.id === id).delete).map(_ => ())
+  }
+
+  private class FriendRequestTable(tag: Tag)
       extends Table[FriendRequest](tag, "friend_requests") {
+
+    implicit val localDateTimeColumnType: BaseColumnType[LocalDateTime] = MappedColumnType.base[LocalDateTime, String](
+      ldt => ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+      str => LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    )
+
     def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
     def sender: Rep[String] = column[String]("sender")
     def receiver: Rep[String] = column[String]("receiver")
     def status: Rep[RequestStatus] = column[RequestStatus]("status")
     def created: Rep[LocalDateTime] = column[LocalDateTime]("created")
-    def updated: Rep[Option[LocalDateTime]] =
-      column[Option[LocalDateTime]]("updated")
 
     override def * : ProvenShape[FriendRequest] =
-      (id, sender, receiver, status, created, updated) <>
+      (id, sender, receiver, status, created) <>
         ((FriendRequest.apply _).tupled, FriendRequest.unapply)
   }
 }

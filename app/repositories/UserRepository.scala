@@ -71,7 +71,7 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     ) <> ((User.apply _).tupled, User.unapply)
   }
 
-  class FriendshipTable(tag: Tag)
+  private class FriendshipTable(tag: Tag)
       extends Table[(String, String)](tag, "friendships") {
     def username1 = column[String]("username1")
     def username2 = column[String]("username2")
