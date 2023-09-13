@@ -2,6 +2,7 @@ package controllers
 
 import actions.JWTAuthAction
 import dtos.PostDTO
+import helpers.RequestKeys.TokenUsername
 import models.Post
 import play.api.Logging
 import play.api.libs.json.Json
@@ -22,7 +23,8 @@ class PostController @Inject() (
   def create(): Action[PostDTO] =
     jwtAuthAction.async(parse.json[PostDTO]) { implicit request =>
       val postDTO = request.body
+      val username = request.attrs.get(TokenUsername).get
 
-      postService.create(Post.create(postDTO)).map(post => Created(Json.toJson(post)))
+      postService.create(Post.create(postDTO, username)).map(post => Created(Json.toJson(post)))
     }
 }

@@ -21,9 +21,7 @@ class PostRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
   private val postTable = TableQuery[PostTable]
 
   def create(post: Post): Future[Post] = {
-    db.run(postTable returning postTable.map(_.id) += post).map(id => Post.create(post, id)).recover {
-      case _: SQLIntegrityConstraintViolationException => throw ValidationException("Poster does not exist")
-    }
+    db.run(postTable returning postTable.map(_.id) += post).map(id => Post.create(post, id))
   }
 
   class PostTable(tag: Tag) extends Table[Post](tag, "posts") {
