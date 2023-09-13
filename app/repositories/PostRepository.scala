@@ -31,6 +31,13 @@ class PostRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     }
   }
 
+  def unlike(id: Long, user: String, currentLikes: Long): Future[Unit] = {
+    db.run(likesTable.filter(likedPost => likedPost.post === id && likedPost.username === user).delete).flatMap {
+      case 1 => db.run(postTable.filter(_.id === id).map(_.likes).update(currentLikes - 1)).map(_ => ())
+      case 0 => Future.failed(ValidationException("You can only unlike a post you liked"))
+    }
+  }
+
   def getById(id: Long): Future[Option[Post]] = {
     db.run(postTable.filter(_.id === id).result).map(_.headOption)
   }

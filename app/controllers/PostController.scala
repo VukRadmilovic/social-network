@@ -42,4 +42,11 @@ class PostController @Inject() (
 
       postService.like(id, username).map(_ => NoContent)
     }
+
+  def unlike(id: Long): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      postService.unlike(id, username).map(_ => NoContent)
+    }
 }

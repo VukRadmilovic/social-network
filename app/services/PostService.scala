@@ -21,6 +21,13 @@ class PostService @Inject() (
     } yield ()
   }
 
+  def unlike(id: Long, user: String): Future[Unit] = {
+    postRepository.getById(id).flatMap {
+      case Some(post) => postRepository.unlike(id, user, post.likes)
+      case None => Future.failed(ValidationException("Post with this ID does not exist"))
+    }
+  }
+
   def create(post: Post): Future[Post] = {
     if (post.content.isBlank) {
       Future.failed(ValidationException("Empty post"))
