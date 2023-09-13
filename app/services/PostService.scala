@@ -16,7 +16,7 @@ class PostService @Inject() (
     for {
       post <- postRepository.getById(id).map(_.getOrElse(throw ValidationException("Post with this ID does not exist")))
       areFriends <- userRepository.areFriends(user, post.poster)
-      _ <- if (areFriends) postRepository.like(id, user, post.likes) else
+      _ <- if (areFriends || post.poster == user) postRepository.like(id, user, post.likes) else
         Future.failed(AuthorizationException("You can only like your friend's posts"))
     } yield ()
   }
@@ -56,6 +56,18 @@ class PostService @Inject() (
         case None =>
           Future.failed(ValidationException("Post with this ID does not exist"))
       }
+    }
+  }
+
+  def getById(id: Long, user: String): Future[Post] = {
+    postRepository.getById(id).flatMap {
+      case Some(post) if post.poster == user => Future.successful(post)
+      case Some(post) =>
+        userRepository.areFriends(user, post.poster).flatMap {
+          case true => Future.successful(post)
+          case false => Future.failed(ValidationException("You can only view your friend's posts"))
+        }
+      case None => Future.failed(ValidationException("Post with this ID does not exist"))
     }
   }
 }

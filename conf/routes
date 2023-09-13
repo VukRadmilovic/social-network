@@ -4,6 +4,7 @@ GET     /users/requests/sent                        controllers.FriendController
 GET     /users                                      controllers.UserController.getAll
 GET     /users/:username                            controllers.UserController.getByUsername(username:String)
 GET     /users/find/:name                           controllers.UserController.getByUsernameOrDisplayNameStartsWith(name:String)
+GET     /posts/:id                                  controllers.PostController.getById(id:Long)
 DELETE  /users/requests/cancel/:id                  controllers.FriendController.cancelRequest(id:Long)
 DELETE  /posts/:id                                  controllers.PostController.delete(id:Long)
 PUT     /users/requests/reject/:id                  controllers.FriendController.rejectRequest(id:Long)
