@@ -27,4 +27,12 @@ class PostController @Inject() (
 
       postService.create(Post.create(postDTO, username)).map(post => Created(Json.toJson(post)))
     }
+
+  def edit(id: Long): Action[PostDTO] =
+    jwtAuthAction.async(parse.json[PostDTO]) { implicit request =>
+      val postDTO = request.body
+      val username = request.attrs.get(TokenUsername).get
+
+      postService.edit(id, username, postDTO.content).map(_ => NoContent)
+    }
 }

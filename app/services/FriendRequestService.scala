@@ -1,6 +1,6 @@
 package services
 
-import exceptions.ValidationException
+import exceptions.{AuthorizationException, ValidationException}
 import models.FriendRequest
 import models.RequestResolution.{Accept, Cancel, Reject, RequestResolution}
 import models.RequestStatus.Pending
@@ -34,7 +34,7 @@ class FriendRequestService @Inject() (
         if (supposedUsername == username) {
           Future.successful(request)
         } else {
-          Future.failed(ValidationException(failMsg))
+          Future.failed(AuthorizationException(failMsg))
         }
       case Some(_) =>
         Future.failed(ValidationException(
