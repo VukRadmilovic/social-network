@@ -1,7 +1,7 @@
 package services
 
 import exceptions.{AuthorizationException, ValidationException}
-import models.Post
+import models.{Post, User}
 import play.api.Logging
 import repositories.{PostRepository, UserRepository}
 
@@ -79,6 +79,18 @@ class PostService @Inject() (
         case true => postRepository.getNewestByPoster(poster)
         case false => Future.failed(AuthorizationException("You can only view your friend's posts"))
       }
+    }
+  }
+
+  def getAllLikers(id: Long, user: String): Future[Seq[User]] = {
+    postRepository.getById(id).flatMap {
+      case Some(post) if post.poster == user => postRepository.getAllLikers(id)
+      case Some(post) =>
+        userRepository.areFriends(user, post.poster).flatMap {
+          case true => postRepository.getAllLikers(id)
+          case false => Future.failed(AuthorizationException("You can only view information about your friend's posts"))
+        }
+      case None => Future.failed(ValidationException("Post with this ID does not exist"))
     }
   }
 }

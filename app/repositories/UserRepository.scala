@@ -15,7 +15,7 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
 
   import profile.api._
 
-  private val userTable = TableQuery[UserTable]
+  val userTable = TableQuery[UserTable]
   private val friendshipTable = TableQuery[FriendshipTable]
 
   def getAll: Future[Seq[User]] = {

@@ -1,7 +1,7 @@
 package repositories
 
 import exceptions.ValidationException
-import models.Post
+import models.{Post, User}
 import play.api.Logging
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
@@ -13,7 +13,10 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class PostRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
+class PostRepository @Inject() (
+                                 val dbConfigProvider: DatabaseConfigProvider,
+                                 val userRepository: UserRepository
+                               )(
     implicit ec: ExecutionContext)
     extends HasDatabaseConfigProvider[JdbcProfile] with Logging {
 
@@ -44,6 +47,17 @@ class PostRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
 
   def getNewestByPoster(poster: String): Future[Seq[Post]] = {
     db.run(postTable.filter(_.poster === poster).sortBy(_.posted.desc).result)
+  }
+
+  def getAllLikers(id: Long): Future[Seq[User]] = {
+    db.run(likesTable
+      .filter(_.post === id)
+      .map(_.username)
+      .join(userRepository.userTable)
+      .on(_ === _.username)
+      .map(usernameUser => usernameUser._2)
+      .result
+    )
   }
 
   def create(post: Post): Future[Post] = {

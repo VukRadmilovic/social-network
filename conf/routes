@@ -6,6 +6,7 @@ GET     /users/:username                            controllers.UserController.g
 GET     /users/find/:name                           controllers.UserController.getByUsernameOrDisplayNameStartsWith(name:String)
 GET     /posts/:id                                  controllers.PostController.getById(id:Long)
 GET     /posts/user/:poster                         controllers.PostController.getNewestByPoster(poster:String)
+GET     /posts/:id/likers                           controllers.PostController.getAllLikers(id:Long)
 DELETE  /users/requests/cancel/:id                  controllers.FriendController.cancelRequest(id:Long)
 DELETE  /posts/:id                                  controllers.PostController.delete(id:Long)
 PUT     /users/requests/reject/:id                  controllers.FriendController.rejectRequest(id:Long)

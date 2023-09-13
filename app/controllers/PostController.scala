@@ -1,7 +1,7 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.PostDTO
+import dtos.{PostDTO, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.Post
 import play.api.Logging
@@ -69,5 +69,12 @@ class PostController @Inject() (
       val username = request.attrs.get(TokenUsername).get
 
       postService.getNewestByPoster(username, poster).map(posts => Ok(Json.toJson(posts)))
+    }
+
+  def getAllLikers(id: Long): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      postService.getAllLikers(id, username).map(likers => Ok(Json.toJson(likers.map(UserDTO(_)))))
     }
 }
