@@ -42,6 +42,10 @@ class PostRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     db.run(postTable.filter(_.id === id).result).map(_.headOption)
   }
 
+  def getNewestByPoster(poster: String): Future[Seq[Post]] = {
+    db.run(postTable.filter(_.poster === poster).sortBy(_.posted.desc).result)
+  }
+
   def create(post: Post): Future[Post] = {
     db.run(postTable returning postTable.map(_.id) += post).map(id => Post.create(post, id))
   }

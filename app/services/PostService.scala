@@ -65,9 +65,20 @@ class PostService @Inject() (
       case Some(post) =>
         userRepository.areFriends(user, post.poster).flatMap {
           case true => Future.successful(post)
-          case false => Future.failed(ValidationException("You can only view your friend's posts"))
+          case false => Future.failed(AuthorizationException("You can only view your friend's posts"))
         }
       case None => Future.failed(ValidationException("Post with this ID does not exist"))
+    }
+  }
+
+  def getNewestByPoster(user: String, poster: String): Future[Seq[Post]] = {
+    if (user == poster) {
+      postRepository.getNewestByPoster(poster)
+    } else {
+      userRepository.areFriends(user, poster).flatMap {
+        case true => postRepository.getNewestByPoster(poster)
+        case false => Future.failed(AuthorizationException("You can only view your friend's posts"))
+      }
     }
   }
 }

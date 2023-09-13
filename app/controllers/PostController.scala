@@ -63,4 +63,11 @@ class PostController @Inject() (
 
       postService.getById(id, username).map(post => Ok(Json.toJson(post)))
     }
+
+  def getNewestByPoster(poster: String): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      postService.getNewestByPoster(username, poster).map(posts => Ok(Json.toJson(posts)))
+    }
 }
