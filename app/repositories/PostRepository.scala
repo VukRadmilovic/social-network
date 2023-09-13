@@ -50,6 +50,10 @@ class PostRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     db.run(postTable.filter(_.id === id).map(_.content).update(newContent)).map(_ => ())
   }
 
+  def delete(id: Long): Future[Unit] = {
+    db.run(postTable.filter(_.id === id).delete).map(_ => ())
+  }
+
   class PostTable(tag: Tag) extends Table[Post](tag, "posts") {
 
     implicit val localDateTimeColumnType: BaseColumnType[LocalDateTime] = MappedColumnType.base[LocalDateTime, String](

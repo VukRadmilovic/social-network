@@ -41,17 +41,17 @@ CREATE TABLE likes (
     post BIGINT                     NOT NULL,
     PRIMARY KEY (username, post),
     CONSTRAINT user_fk              FOREIGN KEY (username) REFERENCES users (username),
-    CONSTRAINT post_fk              FOREIGN KEY (post) REFERENCES posts (id)
+    CONSTRAINT post_fk              FOREIGN KEY (post) REFERENCES posts (id) ON DELETE CASCADE
 );
 
 # --- !Downs
 
-DROP TABLE IF EXISTS friendships;
-
-DROP TABLE IF EXISTS users;
-
-DROP TABLE IF EXISTS friend_requests;
+DROP TABLE IF EXISTS likes;
 
 DROP TABLE IF EXISTS posts;
 
-DROP TABLE IF EXISTS likes;
+DROP TABLE IF EXISTS friendships;
+
+DROP TABLE IF EXISTS friend_requests;
+
+DROP TABLE IF EXISTS users;

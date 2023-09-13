@@ -49,4 +49,11 @@ class PostController @Inject() (
 
       postService.unlike(id, username).map(_ => NoContent)
     }
+
+  def delete(id: Long): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      postService.delete(id, username).map(_ => NoContent)
+    }
 }

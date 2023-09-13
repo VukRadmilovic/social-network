@@ -28,6 +28,14 @@ class PostService @Inject() (
     }
   }
 
+  def delete(id: Long, user: String): Future[Unit] = {
+    postRepository.getById(id).flatMap {
+      case Some(post) if post.poster == user => postRepository.delete(id)
+      case Some(_) => Future.failed(AuthorizationException("You can only delete your own posts"))
+      case _ => Future.failed(ValidationException("Post with this ID does not exist"))
+    }
+  }
+
   def create(post: Post): Future[Post] = {
     if (post.content.isBlank) {
       Future.failed(ValidationException("Empty post"))
