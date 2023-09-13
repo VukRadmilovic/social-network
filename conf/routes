@@ -13,3 +13,4 @@ POST    /users/requests/accept/:id                  controllers.FriendController
 POST    /users/register                             controllers.UserController.register()
 POST    /users/login                                controllers.UserController.login()
 POST    /users/requests/:username                   controllers.FriendController.sendRequest(username:String)
+POST    /posts                                      controllers.PostController.create()

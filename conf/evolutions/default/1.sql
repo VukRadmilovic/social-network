@@ -27,6 +27,23 @@ CREATE TABLE friend_requests
     updated  TIMESTAMP
 );
 
+CREATE TABLE posts (
+    id       BIGINT AUTO_INCREMENT  PRIMARY KEY,
+    poster   VARCHAR(255)           NOT NULL,
+    content  TEXT                   NOT NULL,
+    posted   TIMESTAMP              NOT NULL,
+    likes    BIGINT                 DEFAULT 0,
+    CONSTRAINT poster_fk FOREIGN KEY (poster) REFERENCES users (username)
+);
+
+CREATE TABLE likes (
+    username VARCHAR(255)           NOT NULL,
+    post BIGINT                     NOT NULL,
+    PRIMARY KEY (username, post),
+    CONSTRAINT user_fk              FOREIGN KEY (username) REFERENCES users (username),
+    CONSTRAINT post_fk              FOREIGN KEY (post) REFERENCES posts (id)
+);
+
 # --- !Downs
 
 DROP TABLE IF EXISTS friendships;
@@ -34,3 +51,7 @@ DROP TABLE IF EXISTS friendships;
 DROP TABLE IF EXISTS users;
 
 DROP TABLE IF EXISTS friend_requests;
+
+DROP TABLE IF EXISTS posts;
+
+DROP TABLE IF EXISTS likes;

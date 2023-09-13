@@ -1,12 +1,12 @@
 import exceptions.{AuthorizationException, ValidationException}
+import play.api.Logging
 import play.api.http.HttpErrorHandler
 import play.api.libs.json.Json
-import play.api.mvc._
 import play.api.mvc.Results._
-import play.api.Logging
+import play.api.mvc._
 
-import scala.concurrent._
 import javax.inject.Singleton
+import scala.concurrent._
 
 @Singleton
 class ErrorHandler extends HttpErrorHandler with Logging {
