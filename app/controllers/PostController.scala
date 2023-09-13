@@ -6,7 +6,7 @@ import helpers.RequestKeys.TokenUsername
 import models.Post
 import play.api.Logging
 import play.api.libs.json.Json
-import play.api.mvc.{Action, BaseController, ControllerComponents}
+import play.api.mvc.{Action, AnyContent, BaseController, ControllerComponents}
 import services.PostService
 
 import javax.inject.{Inject, Singleton}
@@ -34,5 +34,12 @@ class PostController @Inject() (
       val username = request.attrs.get(TokenUsername).get
 
       postService.edit(id, username, postDTO.content).map(_ => NoContent)
+    }
+
+  def like(id: Long): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      postService.like(id, username).map(_ => NoContent)
     }
 }

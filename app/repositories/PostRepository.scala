@@ -1,11 +1,13 @@
 package repositories
 
+import exceptions.ValidationException
 import models.Post
 import play.api.Logging
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -18,6 +20,16 @@ class PostRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
   import profile.api._
 
   private val postTable = TableQuery[PostTable]
+  private val likesTable = TableQuery[LikesTable]
+
+  def like(id: Long, user: String, currentLikes: Long): Future[Unit] = {
+    db.run(likesTable += (user, id)).flatMap { _ =>
+      db.run(postTable.filter(_.id === id).map(_.likes).update(currentLikes + 1)).map(_ => ())
+    }.recover {
+      case _: SQLIntegrityConstraintViolationException =>
+        throw ValidationException("You already liked this post")
+    }
+  }
 
   def getById(id: Long): Future[Option[Post]] = {
     db.run(postTable.filter(_.id === id).result).map(_.headOption)
