@@ -34,10 +34,10 @@ class UserService @Inject() (
       })
   }
 
-  def login(loginAttempt: LoginAttemptDTO): Future[Option[String]] = {
+  def login(loginAttempt: LoginAttemptDTO): Future[Option[(String, String)]] = {
     userRepository.getByUsername(loginAttempt.username).flatMap {
       case Some(user) if BCrypt.checkpw(loginAttempt.password, user.password) =>
-        Future.successful(Some(authService.generateToken(user.username)))
+        Future.successful(Some(authService.generateTokens(user.username)))
       case _ =>
         Future.successful(None)
     }

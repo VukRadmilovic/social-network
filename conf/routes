@@ -1,7 +1,8 @@
+GET     /users/access-token                         controllers.UserController.getAccessToken()
 GET     /users/friends                              controllers.FriendController.getFriends()
 GET     /users/requests/received                    controllers.FriendController.getReceivedRequests()
 GET     /users/requests/sent                        controllers.FriendController.getSentRequests()
-GET     /users                                      controllers.UserController.getAll
+GET     /users                                      controllers.UserController.getAll()
 GET     /users/:username                            controllers.UserController.getByUsername(username:String)
 GET     /users/find/:name                           controllers.UserController.getByUsernameOrDisplayNameStartsWith(name:String)
 GET     /posts/:id                                  controllers.PostController.getById(id:Long)
@@ -11,7 +12,7 @@ GET     /posts                                      controllers.PostController.g
 DELETE  /users/requests/cancel/:id                  controllers.FriendController.cancelRequest(id:Long)
 DELETE  /posts/:id                                  controllers.PostController.delete(id:Long)
 PUT     /users/requests/reject/:id                  controllers.FriendController.rejectRequest(id:Long)
-PUT     /users/displayName/:newDisplayName          controllers.UserController.changeDisplayName(newDisplayName:String)
+PUT     /users/display-name/:newDisplayName         controllers.UserController.changeDisplayName(newDisplayName:String)
 PUT     /users/password                             controllers.UserController.changePassword()
 PUT     /users/email                                controllers.UserController.changeEmail()
 PUT     /posts/:id                                  controllers.PostController.edit(id:Long)

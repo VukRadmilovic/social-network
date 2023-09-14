@@ -1,14 +1,14 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{EmailChangeDTO, LoginAttemptDTO, PasswordChangeDTO, UserDTO}
+import dtos.{EmailChangeDTO, LoginAttemptDTO, PasswordChangeDTO, RefreshTokenDTO, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.User
 import play.api.Logging
 import play.api.libs.json._
 import play.api.mvc._
 import repositories.UserRepository
-import services.{FriendRequestService, UserService}
+import services.{AuthService, FriendRequestService, UserService}
 
 import javax.inject._
 import scala.concurrent.ExecutionContext
@@ -19,7 +19,8 @@ class UserController @Inject() (
     val userRepository: UserRepository,
     val userService: UserService,
     val friendRequestService: FriendRequestService,
-    val jwtAuthAction: JWTAuthAction
+    val jwtAuthAction: JWTAuthAction,
+    val authService: AuthService
 )(implicit ec: ExecutionContext)
     extends BaseController
     with Logging {
@@ -81,10 +82,19 @@ class UserController @Inject() (
       val loginAttempt = request.body
 
       userService.login(loginAttempt).map {
-        case Some(token) =>
-          Ok(Json.obj("token" -> token))
+        case Some((accessToken, refreshToken)) =>
+          Ok(Json.obj("access_token" -> accessToken, "refresh_token" -> refreshToken))
         case None =>
           Unauthorized(Json.obj("message" -> "Your username or password is incorrect"))
       }
   }
+
+  def getAccessToken: Action[RefreshTokenDTO] =
+    Action.async(parse.json[RefreshTokenDTO]) { implicit request =>
+      val refreshTokenDTO = request.body
+
+      authService
+        .generateAccessTokenIfRefreshValid(refreshTokenDTO.refreshToken)
+        .map(token => Ok(Json.obj("token" -> token)))
+    }
 }
