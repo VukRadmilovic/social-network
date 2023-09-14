@@ -45,15 +45,20 @@ class PostRepository @Inject() (
     db.run(postTable.filter(_.id === id).result).map(_.headOption)
   }
 
-  def getNewestByPoster(poster: String): Future[Seq[Post]] = {
-    db.run(postTable.filter(_.poster === poster).sortBy(_.posted.desc).result)
-  }
-
-  def getNewestByPosters(posters: Seq[String]): Future[Seq[Post]] = {
+  /**
+   * Retrieve a timeline of posts from specified posters, sorted by creation date.
+   *
+   * This method fetches a chronological list of posts from a set of posters, sorting them by their
+   * creation date in descending order. It provides a timeline of posts from the specified posters.
+   *
+   * @param posters The usernames of posters whose posts are included in the timeline.
+   * @return A Future containing a sequence of posts from the specified posters, sorted by creation date.
+   */
+  def getTimeline(posters: Seq[String]): Future[Seq[Post]] = {
     db.run(postTable.filter(post => post.poster.inSet(posters)).sortBy(_.posted.desc).result)
   }
 
-  def getAllLikers(id: Long): Future[Seq[User]] = {
+  def getLikers(id: Long): Future[Seq[User]] = {
     db.run(likesTable
       .filter(_.post === id)
       .map(_.username)

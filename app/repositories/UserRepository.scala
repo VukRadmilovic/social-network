@@ -22,9 +22,16 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     db.run(userTable.result)
   }
 
-  def getByUsernameOrDisplayNameStartsWith(name: String): Future[Seq[User]] = {
-    db.run(userTable.filter(user =>
-      user.username.toLowerCase.startsWith(name) || user.displayName.toLowerCase.startsWith(name)).result)
+  /**
+   * Retrieves users whose display name or username starts with a string. Case insensitive.
+   *
+   * @param name The string to which display names and usernames are compared to
+   * @return Future which will have users whose display name or username starts with `name` as a sequence
+   */
+  def search(name: String): Future[Seq[User]] = {
+    db.run(userTable.
+      filter(user => user.username.toLowerCase.startsWith(name.toLowerCase) ||
+        user.displayName.toLowerCase.startsWith(name.toLowerCase)).result)
   }
 
   def getByUsername(username: String): Future[Option[User]] = {

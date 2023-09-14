@@ -64,24 +64,39 @@ class PostController @Inject() (
       postService.getById(id, username).map(post => Ok(Json.toJson(post)))
     }
 
-  def getNewestByPoster(poster: String): Action[AnyContent] =
+  /**
+   * Retrieves and returns the timeline of a friend of the currently logged-in user (or his own posts).
+   *
+   * This method retrieves posts posted by a specified user (friend) and returns them as a JSON response.
+   *
+   * @param poster The username of the friend whose timeline is to be retrieved.
+   * @return A JSON response containing the posts from the friend's timeline.
+   */
+  def getFriendTimeline(poster: String): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
 
-      postService.getNewestByPoster(username, poster).map(posts => Ok(Json.toJson(posts)))
+      postService.getFriendTimeline(username, poster).map(posts => Ok(Json.toJson(posts)))
     }
 
-  def getAllLikers(id: Long): Action[AnyContent] =
+  def getLikers(id: Long): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
 
-      postService.getAllLikers(id, username).map(likers => Ok(Json.toJson(likers.map(UserDTO(_)))))
+      postService.getLikers(id, username).map(likers => Ok(Json.toJson(likers.map(UserDTO(_)))))
     }
 
-  def getNewestByFriendsAndUser: Action[AnyContent] =
+  /**
+   * Retrieve and return a user's timeline, including their own posts and those of their friends.
+   *
+   * This endpoint provides a chronological list of posts, with the latest posts displayed first.
+   *
+   * @return A JSON array containing posts from the user and their friends, sorted by creation date.
+   */
+  def getTimeline: Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
 
-      postService.getNewestByFriendsAndUser(username).map(posts => Ok(Json.toJson(posts)))
+      postService.getTimeline(username).map(posts => Ok(Json.toJson(posts)))
     }
 }

@@ -16,8 +16,14 @@ class UserService @Inject() (
 )(implicit ec: ExecutionContext) {
   def getAll: Future[Seq[User]] = userRepository.getAll
 
-  def getByUsernameOrDisplayNameStartsWith(name: String): Future[Seq[User]] =
-    userRepository.getByUsernameOrDisplayNameStartsWith(name)
+  /**
+   * Retrieves users whose display name or username starts with a string. Case insensitive.
+   *
+   * @param name The string to which display names and usernames are compared to
+   * @return Future which will have users whose display name or username starts with `name` as a sequence
+   */
+  def search(name: String): Future[Seq[User]] =
+    userRepository.search(name)
 
   def getByUsername(username: String): Future[Option[User]] =
     userRepository.getByUsername(username)

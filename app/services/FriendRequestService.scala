@@ -1,6 +1,6 @@
 package services
 
-import exceptions.{AuthorizationException, ValidationException}
+import exceptions.{AuthorizationException, NotFoundException, ValidationException}
 import models.FriendRequest
 import models.RequestResolution.{Accept, Cancel, Reject, RequestResolution}
 import models.RequestStatus.Pending
@@ -41,7 +41,7 @@ class FriendRequestService @Inject() (
           s"You can only ${resolution.toString.toLowerCase} requests which are still pending")
         )
       case None =>
-        Future.failed(ValidationException("This friend request does not exist"))
+        Future.failed(NotFoundException("This friend request does not exist"))
     }
   }
 
@@ -101,7 +101,7 @@ class FriendRequestService @Inject() (
   private def validateUserExists(friendRequest: FriendRequest): Future[String] = {
     userRepository.getByUsername(friendRequest.receiver).flatMap {
       case Some(user) => Future.successful(user.username)
-      case None => Future.failed(ValidationException("The user you are trying to add does not exist"))
+      case None => Future.failed(NotFoundException("The user you are trying to add does not exist"))
     }
   }
 

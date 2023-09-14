@@ -31,9 +31,18 @@ class UserController @Inject() (
       })
     }
 
-  def getByUsernameOrDisplayNameStartsWith(name: String): Action[AnyContent] =
+  /**
+   * Retrieves users whose display name or username starts with a specified string (case-insensitive).
+   *
+   * This method performs a case-insensitive search for users whose display name or username
+   * starts with the provided string.
+   *
+   * @param name The search term used to filter users.
+   * @return JSON representation of users whose display name or username starts with `name`.
+   */
+  def search(name: String): Action[AnyContent] =
     jwtAuthAction.async {
-      userService.getByUsernameOrDisplayNameStartsWith(name.toLowerCase).map(users => {
+      userService.search(name).map(users => {
         Ok(Json.toJson(users.map(UserDTO(_))))
       })
     }
