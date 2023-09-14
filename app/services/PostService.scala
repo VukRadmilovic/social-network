@@ -39,6 +39,8 @@ class PostService @Inject() (
   def create(post: Post): Future[Post] = {
     if (post.content.isBlank) {
       Future.failed(ValidationException("Empty post"))
+    } else if (post.content.length > 150) {
+      Future.failed(ValidationException("Post is too long. Max length in characters is 150."))
     } else {
       postRepository.create(post)
     }
