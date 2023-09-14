@@ -2,18 +2,20 @@ package services
 
 import exceptions.AuthorizationException
 import pdi.jwt.{JwtAlgorithm, JwtJson}
+import play.api.Configuration
 import play.api.libs.json.Json
 
 import java.time.Clock
 import javax.inject.Inject
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthService @Inject() (implicit ec: ExecutionContext) {
+class AuthService @Inject() (configuration: Configuration)(implicit ec: ExecutionContext) {
   implicit val clock: Clock = Clock.systemUTC
   private val secretKey = "01c0d934ee75f196cdfed19207a549aa60fcac4194011602e4b12f7b1cd5e17e"
 
-  private val accessTokenExpirationMillis = 60 * 60 * 1000 // 1 hour
-  private val refreshTokenExpirationMillis = 7 * 24 * 60 * 60 * 1000 // 7 days
+  private val accessTokenExpirationMillis = configuration.get[FiniteDuration]("accessTokenExpiration").toMillis
+  private val refreshTokenExpirationMillis = configuration.get[FiniteDuration]("refreshTokenExpiration").toMillis
 
   def validateToken(token: String): Future[Option[String]] = {
     try {
