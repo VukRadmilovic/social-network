@@ -75,9 +75,12 @@ class PostService @Inject() (
     if (user == poster) {
       postRepository.getNewestByPoster(poster)
     } else {
-      userRepository.areFriends(user, poster).flatMap {
-        case true => postRepository.getNewestByPoster(poster)
-        case false => Future.failed(AuthorizationException("You can only view your friend's posts"))
+      userRepository.getByUsername(poster).flatMap {
+        case Some(_) => userRepository.areFriends(user, poster).flatMap {
+          case true => postRepository.getNewestByPoster(poster)
+          case false => Future.failed(AuthorizationException("You can only view your friend's posts"))
+        }
+        case None => Future.failed(ValidationException("Poster does not exist"))
       }
     }
   }
