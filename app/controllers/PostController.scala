@@ -77,4 +77,11 @@ class PostController @Inject() (
 
       postService.getAllLikers(id, username).map(likers => Ok(Json.toJson(likers.map(UserDTO(_)))))
     }
+
+  def getNewestByFriendsAndUser: Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      postService.getNewestByFriendsAndUser(username).map(posts => Ok(Json.toJson(posts)))
+    }
 }

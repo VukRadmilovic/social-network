@@ -49,6 +49,10 @@ class PostRepository @Inject() (
     db.run(postTable.filter(_.poster === poster).sortBy(_.posted.desc).result)
   }
 
+  def getNewestByPosters(posters: Seq[String]): Future[Seq[Post]] = {
+    db.run(postTable.filter(post => post.poster.inSet(posters)).sortBy(_.posted.desc).result)
+  }
+
   def getAllLikers(id: Long): Future[Seq[User]] = {
     db.run(likesTable
       .filter(_.post === id)

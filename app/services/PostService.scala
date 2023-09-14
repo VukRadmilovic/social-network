@@ -82,6 +82,12 @@ class PostService @Inject() (
     }
   }
 
+  def getNewestByFriendsAndUser(user: String): Future[Seq[Post]] = {
+    userRepository.getFriends(user).flatMap { friends =>
+      postRepository.getNewestByPosters(friends :+ user)
+    }
+  }
+
   def getAllLikers(id: Long, user: String): Future[Seq[User]] = {
     postRepository.getById(id).flatMap {
       case Some(post) if post.poster == user => postRepository.getAllLikers(id)
