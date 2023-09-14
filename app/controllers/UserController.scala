@@ -1,7 +1,7 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{EmailChangeDTO, LoginAttempt, PasswordChangeDTO, UserDTO}
+import dtos.{EmailChangeDTO, LoginAttemptDTO, PasswordChangeDTO, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.User
 import play.api.Logging
@@ -76,8 +76,8 @@ class UserController @Inject() (
       userService.register(user).map(newUser => Created(Json.toJson(UserDTO(newUser))))
   }
 
-  def login(): Action[LoginAttempt] =
-    Action.async(parse.json[LoginAttempt]) { implicit request =>
+  def login(): Action[LoginAttemptDTO] =
+    Action.async(parse.json[LoginAttemptDTO]) { implicit request =>
       val loginAttempt = request.body
 
       userService.login(loginAttempt).map {

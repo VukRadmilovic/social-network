@@ -1,6 +1,6 @@
 package services
 
-import dtos.LoginAttempt
+import dtos.LoginAttemptDTO
 import exceptions.{AuthorizationException, ValidationException}
 import models.User
 import org.mindrot.jbcrypt.BCrypt
@@ -34,7 +34,7 @@ class UserService @Inject() (
       })
   }
 
-  def login(loginAttempt: LoginAttempt): Future[Option[String]] = {
+  def login(loginAttempt: LoginAttemptDTO): Future[Option[String]] = {
     userRepository.getByUsername(loginAttempt.username).flatMap {
       case Some(user) if BCrypt.checkpw(loginAttempt.password, user.password) =>
         Future.successful(Some(authService.generateToken(user.username)))
