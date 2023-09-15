@@ -69,6 +69,10 @@ class PostRepository @Inject() (
     )
   }
 
+  def liked(id: Long, user: String): Future[Boolean] = {
+    db.run(likesTable.filter(like => like.post === id && like.username === user).exists.result)
+  }
+
   def create(post: Post): Future[Post] = {
     db.run(postTable returning postTable.map(_.id) += post).map(id => Post.create(post, id))
   }

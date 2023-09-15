@@ -1,5 +1,6 @@
 package services
 
+import dtos.OutputPostDTO
 import exceptions.{AuthorizationException, NotFoundException, ValidationException}
 import models.{Post, User}
 import play.api.Logging
@@ -36,13 +37,13 @@ class PostService @Inject() (
     }
   }
 
-  def create(post: Post): Future[Post] = {
+  def create(post: Post): Future[OutputPostDTO] = {
     if (post.content.isBlank) {
       Future.failed(ValidationException("Empty post"))
     } else if (post.content.length > 150) {
       Future.failed(ValidationException("Post is too long. Max length in characters is 150."))
     } else {
-      postRepository.create(post)
+      postRepository.create(post).map(created => OutputPostDTO(created, liked = false))
     }
   }
 
@@ -61,16 +62,25 @@ class PostService @Inject() (
     }
   }
 
-  def getById(id: Long, user: String): Future[Post] = {
+  def getById(id: Long, user: String): Future[OutputPostDTO] = {
     postRepository.getById(id).flatMap {
-      case Some(post) if post.poster == user => Future.successful(post)
+      case Some(post) if post.poster == user =>
+        postRepository.liked(post.id, user).map(liked => OutputPostDTO(post, liked))
       case Some(post) =>
         userRepository.areFriends(user, post.poster).flatMap {
-          case true => Future.successful(post)
+          case true => postRepository.liked(post.id, user).map(liked => OutputPostDTO(post, liked))
           case false => Future.failed(AuthorizationException("You can only view your friend's posts"))
         }
       case None => Future.failed(NotFoundException("Post with this ID does not exist"))
     }
+  }
+
+  private def getTimelineWithLikes(posters: Seq[String], user: String) = {
+    for {
+      posts <- postRepository.getTimeline(posters)
+      likedFutures = posts.map(post => postRepository.liked(post.id, user).map(liked => OutputPostDTO(post, liked)))
+      postDTOs <- Future.traverse(likedFutures)(identity)
+    } yield postDTOs
   }
 
   /**
@@ -82,13 +92,13 @@ class PostService @Inject() (
    * @param poster The username of the friend whose timeline is to be retrieved.
    * @return A Future containing a sequence of Post objects representing the posts from the friend's timeline.
    */
-  def getFriendTimeline(user: String, poster: String): Future[Seq[Post]] = {
+  def getFriendTimeline(user: String, poster: String): Future[Seq[OutputPostDTO]] = {
     if (user == poster) {
-      postRepository.getTimeline(Seq(poster))
+      getTimelineWithLikes(Seq(poster), user)
     } else {
       userRepository.getByUsername(poster).flatMap {
         case Some(_) => userRepository.areFriends(user, poster).flatMap {
-          case true => postRepository.getTimeline(Seq(poster))
+          case true => getTimelineWithLikes(Seq(poster), user)
           case false => Future.failed(AuthorizationException("You can only view your friend's posts"))
         }
         case None => Future.failed(NotFoundException("Poster does not exist"))
@@ -105,10 +115,11 @@ class PostService @Inject() (
    * @param user The username of the user whose timeline is being retrieved.
    * @return A Future containing a sequence of posts from the user and their friends, sorted by creation date.
    */
-  def getTimeline(user: String): Future[Seq[Post]] = {
-    userRepository.getFriends(user).flatMap { friends =>
-      postRepository.getTimeline(friends :+ user)
-    }
+  def getTimeline(user: String): Future[Seq[OutputPostDTO]] = {
+    for {
+      friends <- userRepository.getFriends(user)
+      postDTOs <- getTimelineWithLikes(friends :+ user, user)
+    } yield postDTOs
   }
 
   def getLikers(id: Long, user: String): Future[Seq[User]] = {

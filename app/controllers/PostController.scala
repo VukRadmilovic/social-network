@@ -1,7 +1,7 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{PostDTO, UserDTO}
+import dtos.{InputPostDTO, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.Post
 import play.api.Logging
@@ -20,16 +20,16 @@ class PostController @Inject() (
 )(implicit ec: ExecutionContext)
     extends BaseController
     with Logging {
-  def create(): Action[PostDTO] =
-    jwtAuthAction.async(parse.json[PostDTO]) { implicit request =>
+  def create(): Action[InputPostDTO] =
+    jwtAuthAction.async(parse.json[InputPostDTO]) { implicit request =>
       val postDTO = request.body
       val username = request.attrs.get(TokenUsername).get
 
       postService.create(Post.create(postDTO, username)).map(post => Created(Json.toJson(post)))
     }
 
-  def edit(id: Long): Action[PostDTO] =
-    jwtAuthAction.async(parse.json[PostDTO]) { implicit request =>
+  def edit(id: Long): Action[InputPostDTO] =
+    jwtAuthAction.async(parse.json[InputPostDTO]) { implicit request =>
       val postDTO = request.body
       val username = request.attrs.get(TokenUsername).get
 
