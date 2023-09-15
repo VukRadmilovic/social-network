@@ -1,5 +1,6 @@
 package repositories
 
+import dtos.PaginatedResult
 import exceptions.ValidationException
 import models.{Post, User}
 import play.api.Logging
@@ -46,26 +47,42 @@ class PostRepository @Inject() (
   }
 
   /**
-   * Retrieve a timeline of posts from specified posters, sorted by creation date.
+   * Retrieve a timeline of posts from specified posters, sorted by creation date, in a paginated manner.
    *
    * This method fetches a chronological list of posts from a set of posters, sorting them by their
-   * creation date in descending order. It provides a timeline of posts from the specified posters.
+   * creation date in descending order. It provides a paginated timeline of posts from the specified posters.
    *
    * @param posters The usernames of posters whose posts are included in the timeline.
-   * @return A Future containing a sequence of posts from the specified posters, sorted by creation date.
+   * @param limit   The maximum number of posts to retrieve on each page.
+   * @param page    The page number for paginating the results (starting from 0).
+   * @return JSON representation of a paginated timeline containing posts from the specified posters,
+   *         sorted by creation date.
    */
-  def getTimeline(posters: Seq[String]): Future[Seq[Post]] = {
-    db.run(postTable.filter(post => post.poster.inSet(posters)).sortBy(_.posted.desc).result)
+  def getTimeline(posters: Seq[String], limit: Long, page: Long): Future[PaginatedResult[Post]] = db.run {
+    val offset = page * limit
+
+    for {
+      posts <- postTable.filter(post => post.poster.inSet(posters)).sortBy(_.posted.desc).drop(offset).take(limit).result
+      numberOfPosts <- postTable.filter(post => post.poster.inSet(posters)).length.result
+    } yield PaginatedResult(
+      totalCount = numberOfPosts,
+      entries = posts.toList,
+      hasNextPage = offset + limit < numberOfPosts
+    )
   }
 
-  def getLikers(id: Long): Future[Seq[User]] = {
-    db.run(likesTable
-      .filter(_.post === id)
-      .map(_.username)
-      .join(userRepository.userTable)
-      .on(_ === _.username)
-      .map(usernameUser => usernameUser._2)
-      .result
+  def getLikers(id: Long, limit: Long, page: Long): Future[PaginatedResult[User]] = db.run {
+    val offset = page * limit
+    val baseQuery = likesTable.filter(_.post === id)
+
+    for {
+      likes <- baseQuery.map(_.username).join(userRepository.userTable).on(_ === _.username)
+        .map(usernameUser => usernameUser._2).drop(offset).take(limit).result
+      numberOfLikers <- baseQuery.length.result
+    } yield PaginatedResult(
+      totalCount = numberOfLikers,
+      entries = likes.toList,
+      hasNextPage = offset + limit < numberOfLikers
     )
   }
 
@@ -85,7 +102,7 @@ class PostRepository @Inject() (
     db.run(postTable.filter(_.id === id).delete).map(_ => ())
   }
 
-  class PostTable(tag: Tag) extends Table[Post](tag, "posts") {
+  private class PostTable(tag: Tag) extends Table[Post](tag, "posts") {
 
     implicit val localDateTimeColumnType: BaseColumnType[LocalDateTime] = MappedColumnType.base[LocalDateTime, String](
       ldt => ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
@@ -107,7 +124,7 @@ class PostRepository @Inject() (
     ) <> ((Post.apply _).tupled, Post.unapply)
   }
 
-  class LikesTable(tag: Tag)
+  private class LikesTable(tag: Tag)
     extends Table[(String, Long)](tag, "likes") {
     def username = column[String]("username")
     def post = column[Long]("post")

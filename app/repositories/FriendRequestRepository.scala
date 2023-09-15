@@ -1,5 +1,6 @@
 package repositories
 
+import dtos.PaginatedResult
 import models.RequestStatus.{Pending, RequestStatus}
 import models.{FriendRequest, RequestStatus}
 import play.api.Logging
@@ -31,12 +32,32 @@ class FriendRequestRepository @Inject() (
     db.run(friendRequestTable += friendRequest).map(_ => ())
   }
 
-  def getBySender(sender: String): Future[Seq[FriendRequest]] = {
-    db.run(friendRequestTable.filter(_.sender === sender).result)
+  def getBySender(sender: String, limit: Long, page: Long): Future[PaginatedResult[FriendRequest]] = db.run {
+    val offset = page * limit
+    val query = friendRequestTable.filter(_.sender === sender)
+
+    for {
+      requests <- query.drop(offset).take(limit).result
+      numberOfRequests <- query.length.result
+    } yield PaginatedResult(
+      totalCount = numberOfRequests,
+      entries = requests.toList,
+      hasNextPage = offset + limit < numberOfRequests
+    )
   }
 
-  def getByReceiver(receiver: String): Future[Seq[FriendRequest]] = {
-    db.run(friendRequestTable.filter(_.receiver === receiver).result)
+  def getByReceiver(receiver: String, limit: Long, page: Long): Future[PaginatedResult[FriendRequest]] = db.run {
+    val offset = page * limit
+    val query = friendRequestTable.filter(_.receiver === receiver)
+
+    for {
+      requests <- query.drop(offset).take(limit).result
+      numberOfRequests <- query.length.result
+    } yield PaginatedResult(
+      totalCount = numberOfRequests,
+      entries = requests.toList,
+      hasNextPage = offset + limit < numberOfRequests
+    )
   }
 
   def getFriendRequestById(id: Long): Future[Option[FriendRequest]] = {
@@ -92,7 +113,7 @@ class FriendRequestRepository @Inject() (
     def sender: Rep[String] = column[String]("sender")
     def receiver: Rep[String] = column[String]("receiver")
     def status: Rep[RequestStatus] = column[RequestStatus]("status")
-    def created: Rep[LocalDateTime] = column[LocalDateTime]("created")
+    private def created: Rep[LocalDateTime] = column[LocalDateTime]("created")
 
     override def * : ProvenShape[FriendRequest] =
       (id, sender, receiver, status, created) <>

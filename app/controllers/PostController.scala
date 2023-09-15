@@ -1,11 +1,11 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{InputPostDTO, UserDTO}
+import dtos.{InputPostDTO, OutputPostDTO, PaginatedResult, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.Post
 import play.api.Logging
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.{Action, AnyContent, BaseController, ControllerComponents}
 import services.PostService
 
@@ -20,6 +20,10 @@ class PostController @Inject() (
 )(implicit ec: ExecutionContext)
     extends BaseController
     with Logging {
+
+  implicit val paginatedResultPostJsonFormat: OFormat[PaginatedResult[OutputPostDTO]] = Json.format[PaginatedResult[OutputPostDTO]]
+  implicit val paginatedResultUserJsonFormat: OFormat[PaginatedResult[UserDTO]] = Json.format[PaginatedResult[UserDTO]]
+
   def create(): Action[InputPostDTO] =
     jwtAuthAction.async(parse.json[InputPostDTO]) { implicit request =>
       val postDTO = request.body
@@ -65,38 +69,50 @@ class PostController @Inject() (
     }
 
   /**
-   * Retrieves and returns the timeline of a friend of the currently logged-in user (or his own posts).
+   * Retrieves and returns a paginated timeline of a friend of the currently logged-in user (or his own posts).
    *
    * This method retrieves posts posted by a specified user (friend) and returns them as a JSON response.
    *
    * @param poster The username of the friend whose timeline is to be retrieved.
+   * @param limit  The maximum number of posts to retrieve in each page.
+   * @param page   The page number for paginating the results (starting from 0).
    * @return A JSON response containing the posts from the friend's timeline.
    */
   def getFriendTimeline(poster: String): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
-      postService.getFriendTimeline(username, poster).map(posts => Ok(Json.toJson(posts)))
+      postService.getFriendTimeline(username, poster, limit, page).map(posts => Ok(Json.toJson(posts)))
     }
 
   def getLikers(id: Long): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
-      postService.getLikers(id, username).map(likers => Ok(Json.toJson(likers.map(UserDTO(_)))))
+      postService.getLikers(id, username, limit, page)
+        .map(likers => Ok(Json.toJson(PaginatedResult(
+          likers.totalCount, likers.entries.map(UserDTO(_)), likers.hasNextPage))))
     }
 
   /**
-   * Retrieve and return a user's timeline, including their own posts and those of their friends.
+   * Retrieve and return a user's paginated timeline, including their own posts and those of their friends.
    *
    * This endpoint provides a chronological list of posts, with the latest posts displayed first.
    *
+   * @param limit The maximum number of posts to retrieve in each page.
+   * @param page  The page number for paginating the results (starting from 0).
    * @return A JSON array containing posts from the user and their friends, sorted by creation date.
    */
   def getTimeline: Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
-      postService.getTimeline(username).map(posts => Ok(Json.toJson(posts)))
+      postService.getTimeline(username, limit, page).map(posts => Ok(Json.toJson(posts)))
     }
 }

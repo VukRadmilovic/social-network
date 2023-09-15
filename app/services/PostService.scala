@@ -1,6 +1,6 @@
 package services
 
-import dtos.OutputPostDTO
+import dtos.{OutputPostDTO, PaginatedResult}
 import exceptions.{AuthorizationException, NotFoundException, ValidationException}
 import models.{Post, User}
 import play.api.Logging
@@ -75,30 +75,32 @@ class PostService @Inject() (
     }
   }
 
-  private def getTimelineWithLikes(posters: Seq[String], user: String) = {
+  private def getTimelineWithLikes(posters: Seq[String], user: String, limit: Long, page: Long): Future[PaginatedResult[OutputPostDTO]] = {
     for {
-      posts <- postRepository.getTimeline(posters)
-      likedFutures = posts.map(post => postRepository.liked(post.id, user).map(liked => OutputPostDTO(post, liked)))
+      paginatedPosts <- postRepository.getTimeline(posters, limit, page)
+      likedFutures = paginatedPosts.entries.map(post => postRepository.liked(post.id, user).map(liked => OutputPostDTO(post, liked)))
       postDTOs <- Future.traverse(likedFutures)(identity)
-    } yield postDTOs
+    } yield PaginatedResult(paginatedPosts.totalCount, postDTOs, paginatedPosts.hasNextPage)
   }
 
   /**
-   * Retrieves and returns the timeline of a specified user (friend) for the currently logged-in user (or his own posts).
+   * Retrieves and returns the timeline of a specified user (friend) for the currently logged-in user (or his own posts) in a paginated manner.
    *
-   * This method retrieves posts posted by a specified user (friend) and returns them as a sequence of Post objects.
+   * This method retrieves posts posted by a specified user (friend) and returns them as a paginated list of Post objects.
    *
    * @param user   The username of the currently logged-in user.
    * @param poster The username of the friend whose timeline is to be retrieved.
-   * @return A Future containing a sequence of Post objects representing the posts from the friend's timeline.
+   * @param limit  The maximum number of posts to retrieve on each page.
+   * @param page   The page number for paginating the results (starting from 0).
+   * @return JSON representation of a paginated list of Post objects representing the posts from the friend's timeline.
    */
-  def getFriendTimeline(user: String, poster: String): Future[Seq[OutputPostDTO]] = {
+  def getFriendTimeline(user: String, poster: String, limit: Long, page: Long): Future[PaginatedResult[OutputPostDTO]] = {
     if (user == poster) {
-      getTimelineWithLikes(Seq(poster), user)
+      getTimelineWithLikes(Seq(poster), user, limit, page)
     } else {
       userRepository.getByUsername(poster).flatMap {
         case Some(_) => userRepository.areFriends(user, poster).flatMap {
-          case true => getTimelineWithLikes(Seq(poster), user)
+          case true => getTimelineWithLikes(Seq(poster), user, limit, page)
           case false => Future.failed(AuthorizationException("You can only view your friend's posts"))
         }
         case None => Future.failed(NotFoundException("Poster does not exist"))
@@ -107,27 +109,29 @@ class PostService @Inject() (
   }
 
   /**
-   * Retrieve a user's timeline, including their own posts and those of their friends.
+   * Retrieve a user's timeline, including their own posts and those of their friends, in a paginated manner.
    *
    * This method retrieves a chronological list of posts for a given user, including their own posts
    * and those of their friends. The posts are sorted by creation date, with the latest posts displayed first.
    *
-   * @param user The username of the user whose timeline is being retrieved.
-   * @return A Future containing a sequence of posts from the user and their friends, sorted by creation date.
+   * @param user  The username of the user whose timeline is being retrieved.
+   * @param limit The maximum number of posts to retrieve on each page.
+   * @param page  The page number for paginating the results (starting from 0).
+   * @return JSON representation of a paginated list of Post objects representing the posts from the user and their friends' timeline.
    */
-  def getTimeline(user: String): Future[Seq[OutputPostDTO]] = {
+  def getTimeline(user: String, limit: Long, page: Long): Future[PaginatedResult[OutputPostDTO]] = {
     for {
-      friends <- userRepository.getFriends(user)
-      postDTOs <- getTimelineWithLikes(friends :+ user, user)
+      friends <- userRepository.getFriendsUsernames(user)
+      postDTOs <- getTimelineWithLikes(friends :+ user, user, limit, page)
     } yield postDTOs
   }
 
-  def getLikers(id: Long, user: String): Future[Seq[User]] = {
+  def getLikers(id: Long, user: String, limit: Long, page: Long): Future[PaginatedResult[User]] = {
     postRepository.getById(id).flatMap {
-      case Some(post) if post.poster == user => postRepository.getLikers(id)
+      case Some(post) if post.poster == user => postRepository.getLikers(id, limit, page)
       case Some(post) =>
         userRepository.areFriends(user, post.poster).flatMap {
-          case true => postRepository.getLikers(id)
+          case true => postRepository.getLikers(id, limit, page)
           case false => Future.failed(AuthorizationException("You can only view information about your friend's posts"))
         }
       case None => Future.failed(NotFoundException("Post with this ID does not exist"))

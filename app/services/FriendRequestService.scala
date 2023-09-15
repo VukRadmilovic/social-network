@@ -1,5 +1,6 @@
 package services
 
+import dtos.PaginatedResult
 import exceptions.{AuthorizationException, NotFoundException, ValidationException}
 import models.FriendRequest
 import models.RequestResolution.{Accept, Cancel, Reject, RequestResolution}
@@ -15,12 +16,12 @@ class FriendRequestService @Inject() (
     userRepository: UserRepository
 )(implicit ec: ExecutionContext)
     extends Logging {
-  def getByReceiver(username: String): Future[Seq[FriendRequest]] = {
-    friendRequestRepository.getByReceiver(username)
+  def getByReceiver(username: String, limit: Long, page: Long): Future[PaginatedResult[FriendRequest]] = {
+    friendRequestRepository.getByReceiver(username, limit, page)
   }
 
-  def getBySender(username: String): Future[Seq[FriendRequest]] = {
-    friendRequestRepository.getBySender(username)
+  def getBySender(username: String, limit: Long, page: Long): Future[PaginatedResult[FriendRequest]] = {
+    friendRequestRepository.getBySender(username, limit, page)
   }
 
   private def validate(id: Long, username: String, resolution: RequestResolution): Future[FriendRequest] = {

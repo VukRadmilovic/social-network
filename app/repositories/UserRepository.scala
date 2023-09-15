@@ -1,5 +1,6 @@
 package repositories
 
+import dtos.PaginatedResult
 import models.User
 import play.api.Logging
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -18,20 +19,42 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
   val userTable = TableQuery[UserTable]
   private val friendshipTable = TableQuery[FriendshipTable]
 
-  def getAll: Future[Seq[User]] = {
-    db.run(userTable.result)
+  def getAll(limit: Long, page: Long): Future[PaginatedResult[User]] = db.run {
+    val offset = page * limit
+
+    for {
+      users <- userTable.drop(offset).take(limit).result
+      numberOfUsers <- userTable.length.result
+    } yield PaginatedResult(
+      totalCount = numberOfUsers,
+      entries = users.toList,
+      hasNextPage = offset + limit < numberOfUsers
+    )
   }
 
   /**
-   * Retrieves users whose display name or username starts with a string. Case insensitive.
+   * Retrieves users whose display name or username starts with a string, case-insensitively, in a paginated manner.
    *
-   * @param name The string to which display names and usernames are compared to
-   * @return Future which will have users whose display name or username starts with `name` as a sequence
+   * This method performs a case-insensitive search for users whose display name or username starts with the provided string.
+   *
+   * @param name  The search term used to filter users.
+   * @param limit The maximum number of users to retrieve on each page.
+   * @param page  The page number for paginating the results (starting from 0).
+   * @return JSON representation of a paginated list of users whose display name or username starts with `name`.
    */
-  def search(name: String): Future[Seq[User]] = {
-    db.run(userTable.
-      filter(user => user.username.toLowerCase.startsWith(name.toLowerCase) ||
-        user.displayName.toLowerCase.startsWith(name.toLowerCase)).result)
+  def search(name: String, limit: Long, page: Long): Future[PaginatedResult[User]] = db.run {
+    val offset = page * limit
+    val query = userTable.filter(user => user.username.toLowerCase.startsWith(name.toLowerCase) ||
+        user.displayName.toLowerCase.startsWith(name.toLowerCase))
+
+    for {
+      users <- query.drop(offset).take(limit).result
+      numberOfUsers <- query.length.result
+    } yield PaginatedResult(
+      totalCount = numberOfUsers,
+      entries = users.toList,
+      hasNextPage = offset + limit < numberOfUsers
+    )
   }
 
   def getByUsername(username: String): Future[Option[User]] = {
@@ -60,7 +83,7 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
         .result)
   }
 
-  def getFriends(username: String): Future[Seq[String]] = {
+  def getFriendsUsernames(username: String): Future[Seq[String]] = {
     db.run(
       friendshipTable
         .filter(friendship => friendship.username1 === username || friendship.username2 === username)
@@ -68,6 +91,23 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     ).map(friendTuples => friendTuples.flatMap { case (user1, user2) =>
       Seq(user1, user2).filterNot(_ == username)
     })
+  }
+
+  def getFriendsPaginated(username: String, limit: Long, page: Long): Future[PaginatedResult[User]] = {
+    val offset = page * limit
+    val baseQuery = friendshipTable
+      .filter(friendship => friendship.username1 === username || friendship.username2 === username)
+
+    for {
+      friendships <- db.run(baseQuery.drop(offset).take(limit).result)
+      friendUsernames = friendships.flatMap { case (user1, user2) => Seq(user1, user2).filterNot(_ == username) }
+      friends <- Future.sequence(friendUsernames.map(getByUsername)).map(_.flatten)
+      numberOfFriendships <- db.run(baseQuery.length.result)
+    } yield PaginatedResult(
+      totalCount = numberOfFriendships,
+      entries = friends.toList,
+      hasNextPage = offset + limit < numberOfFriendships
+    )
   }
 
   def changeDisplayName(username: String, newDisplayName: String): Future[Unit] = {

@@ -1,7 +1,7 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{EmailChangeDTO, LoginAttemptDTO, PasswordChangeDTO, RefreshTokenDTO, UserDTO}
+import dtos.{EmailChangeDTO, LoginAttemptDTO, PaginatedResult, PasswordChangeDTO, RefreshTokenDTO, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.User
 import play.api.Logging
@@ -24,26 +24,37 @@ class UserController @Inject() (
 )(implicit ec: ExecutionContext)
     extends BaseController
     with Logging {
+
+  implicit val paginatedResultUserJsonFormat: OFormat[PaginatedResult[UserDTO]] = Json.format[PaginatedResult[UserDTO]]
+
   def getAll: Action[AnyContent] =
-    jwtAuthAction.async {
-      userService.getAll.map(users => {
-        Ok(Json.toJson(users.map(UserDTO(_))))
+    jwtAuthAction.async { implicit request =>
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
+
+      userService.getAll(limit, page).map(users => {
+        Ok(Json.toJson(PaginatedResult(users.totalCount, users.entries.map(UserDTO(_)), users.hasNextPage)))
       })
     }
 
   /**
-   * Retrieves users whose display name or username starts with a specified string (case-insensitive).
+   * Retrieves users whose display name or username starts with a specified string (case-insensitive) in a paginated manner.
    *
    * This method performs a case-insensitive search for users whose display name or username
-   * starts with the provided string.
+   * starts with the provided string and paginates the results.
    *
-   * @param name The search term used to filter users.
+   * @param name  The search term used to filter users.
+   * @param limit The maximum number of users to retrieve in each page.
+   * @param page  The page number for paginating the results (starting from 0).
    * @return JSON representation of users whose display name or username starts with `name`.
    */
   def search(name: String): Action[AnyContent] =
-    jwtAuthAction.async {
-      userService.search(name).map(users => {
-        Ok(Json.toJson(users.map(UserDTO(_))))
+    jwtAuthAction.async { implicit request =>
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
+
+      userService.search(name, limit, page).map(users => {
+        Ok(Json.toJson(PaginatedResult(users.totalCount, users.entries.map(UserDTO(_)), users.hasNextPage)))
       })
     }
 

@@ -1,6 +1,6 @@
 package services
 
-import dtos.LoginAttemptDTO
+import dtos.{LoginAttemptDTO, PaginatedResult}
 import exceptions.{AuthorizationException, ValidationException}
 import models.User
 import org.mindrot.jbcrypt.BCrypt
@@ -14,16 +14,22 @@ class UserService @Inject() (
     authService: AuthService,
     userValidationService: UserValidationService
 )(implicit ec: ExecutionContext) {
-  def getAll: Future[Seq[User]] = userRepository.getAll
+  def getAll(limit: Long, page: Long): Future[PaginatedResult[User]] =
+    userRepository.getAll(limit, page)
 
   /**
-   * Retrieves users whose display name or username starts with a string. Case insensitive.
+   * Retrieves users whose display name or username starts with a string in a paginated manner. Case insensitive.
    *
-   * @param name The string to which display names and usernames are compared to
-   * @return Future which will have users whose display name or username starts with `name` as a sequence
+   * This method performs a case-insensitive search for users whose display name or username
+   * starts with the provided string.
+   *
+   * @param name  The search term used to filter users.
+   * @param limit The maximum number of users to retrieve on each page.
+   * @param page  The page number for paginating the results (starting from 0).
+   * @return JSON representation of a paginated list of User objects matching the search criteria.
    */
-  def search(name: String): Future[Seq[User]] =
-    userRepository.search(name)
+  def search(name: String, limit: Long, page: Long): Future[PaginatedResult[User]] =
+    userRepository.search(name, limit, page)
 
   def getByUsername(username: String): Future[Option[User]] =
     userRepository.getByUsername(username)
@@ -49,8 +55,8 @@ class UserService @Inject() (
     }
   }
 
-  def getFriends(username: String): Future[Seq[String]] = {
-    userRepository.getFriends(username)
+  def getFriendsPaginated(username: String, limit: Long, page: Long): Future[PaginatedResult[User]] = {
+    userRepository.getFriendsPaginated(username, limit, page)
   }
 
   def changeDisplayName(username: String, newDisplayName: String): Future[Unit] = {
