@@ -2,10 +2,14 @@ package services
 
 import dtos.{LoginAttemptDTO, PaginatedResult}
 import exceptions.{AuthorizationException, ValidationException}
+import helpers.MinIO
 import models.User
 import org.mindrot.jbcrypt.BCrypt
+import play.api.libs.Files
+import play.api.mvc.MultipartFormData
 import repositories.UserRepository
 
+import java.io.File
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -41,7 +45,7 @@ class UserService @Inject() (
     userValidationService
       .validate(user)
       .flatMap(_ => {
-        val newUser = User(user.username, user.displayName, BCrypt.hashpw(user.password, BCrypt.gensalt()), user.email)
+        val newUser = User(user.username, user.displayName, BCrypt.hashpw(user.password, BCrypt.gensalt()), user.email, user.hasProfilePicture)
         userRepository.create(newUser)
       })
   }
@@ -85,6 +89,48 @@ class UserService @Inject() (
           userRepository.changeEmail(username, newEmail)
       case _ =>
         Future.failed(AuthorizationException("Incorrect current password"))
+    }
+  }
+
+  def getProfilePicture(username: String, pictureOwner: String): Future[String] = {
+    if (username == pictureOwner) {
+      getProfilePicture(pictureOwner)
+    } else {
+      userRepository.getByUsername(username).flatMap {
+        case Some(_) => userRepository.areFriends(username, pictureOwner).flatMap { friends =>
+          if (friends) {
+            getProfilePicture(pictureOwner)
+          } else {
+            throw AuthorizationException("You can only see friend's profile pictures")
+          }
+        }
+        case _ => throw ValidationException("User does not exist")
+      }
+    }
+  }
+
+  private def getProfilePicture(pictureOwner: String): Future[String] = {
+    userRepository.hasProfilePicture(pictureOwner).map { hasProfilePicture =>
+      if (hasProfilePicture.get) {
+        MinIO.getProfilePicture(pictureOwner)
+      } else {
+        MinIO.getProfilePicture("default")
+      }
+    }
+  }
+
+  def uploadProfilePicture(username: String, file: File, contentType: String): Future[Unit] = {
+    MinIO.uploadProfilePicture(username, file, contentType)
+    userRepository.addProfilePicture(username)
+  }
+
+  def deleteProfilePicture(username: String): Future[Unit] = {
+    userRepository.hasProfilePicture(username).flatMap {
+      case Some(has) if has =>
+        MinIO.deleteProfilePicture(username)
+        userRepository.deleteProfilePicture(username)
+      case _ =>
+        throw ValidationException("You don't have a profile picture")
     }
   }
 }

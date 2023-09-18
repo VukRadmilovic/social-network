@@ -1,7 +1,7 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{InputPostDTO, OutputPostDTO, PaginatedResult, UserDTO}
+import dtos.{InputPostDTO, OutputPostDTO, PaginatedResult, OutputUserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.Post
 import play.api.{Configuration, Logging}
@@ -24,7 +24,7 @@ class PostController @Inject() (
     with Logging {
 
   implicit val paginatedResultPostJsonFormat: OFormat[PaginatedResult[OutputPostDTO]] = Json.format[PaginatedResult[OutputPostDTO]]
-  implicit val paginatedResultUserJsonFormat: OFormat[PaginatedResult[UserDTO]] = Json.format[PaginatedResult[UserDTO]]
+  implicit val paginatedResultUserJsonFormat: OFormat[PaginatedResult[OutputUserDTO]] = Json.format[PaginatedResult[OutputUserDTO]]
 
   def create(): Action[InputPostDTO] =
     jwtAuthAction.async(parse.json[InputPostDTO]) { implicit request =>
@@ -97,7 +97,7 @@ class PostController @Inject() (
 
       postService.getLikers(id, username, limit, page)
         .map(likers => Ok(Json.toJson(PaginatedResult(
-          likers.totalCount, likers.entries.map(UserDTO(_)), likers.hasNextPage))))
+          likers.totalCount, likers.entries.map(OutputUserDTO(_)), likers.hasNextPage))))
     }
 
   /**

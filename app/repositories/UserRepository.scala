@@ -122,16 +122,35 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     db.run(userTable.filter(_.username === username).map(_.email).update(newEmail)).map(_ => ())
   }
 
+  def hasProfilePicture(username: String): Future[Option[Boolean]] = {
+    db.run(userTable.filter(_.username === username).map(_.hasProfilePicture).result).map(_.headOption)
+  }
+
+  private def setHasProfilePicture(username: String, hasProfilePicture: Boolean): Future[Unit] = {
+    db.run(userTable.filter(_.username === username).map(_.hasProfilePicture).update(hasProfilePicture)).map(_ => ())
+  }
+
+  def addProfilePicture(username: String): Future[Unit] = {
+    setHasProfilePicture(username, hasProfilePicture = true)
+  }
+
+  def deleteProfilePicture(username: String): Future[Unit] = {
+    setHasProfilePicture(username, hasProfilePicture = false)
+  }
+
   class UserTable(tag: Tag) extends Table[User](tag, "users") {
     def username = column[String]("username", O.PrimaryKey)
     def displayName = column[String]("displayName")
     def password = column[String]("password")
     def email = column[String]("email", O.Unique)
+    def hasProfilePicture = column[Boolean]("hasProfilePicture")
+
     override def * : ProvenShape[User] = (
       username,
       displayName,
       password,
-      email
+      email,
+      hasProfilePicture
     ) <> ((User.apply _).tupled, User.unapply)
   }
 

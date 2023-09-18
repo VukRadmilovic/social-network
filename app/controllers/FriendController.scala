@@ -1,7 +1,7 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{PaginatedResult, UserDTO}
+import dtos.{PaginatedResult, OutputUserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.FriendRequest
 import play.api.{Configuration, Logging}
@@ -23,7 +23,7 @@ class FriendController @Inject() (
     extends BaseController
     with Logging {
 
-  implicit val paginatedResultUserJsonFormat: OFormat[PaginatedResult[UserDTO]] = Json.format[PaginatedResult[UserDTO]]
+  implicit val paginatedResultUserJsonFormat: OFormat[PaginatedResult[OutputUserDTO]] = Json.format[PaginatedResult[OutputUserDTO]]
   implicit val paginatedResultFriendRequestJsonFormat: OFormat[PaginatedResult[FriendRequest]] = Json.format[PaginatedResult[FriendRequest]]
 
   private def resolveRequest(id: Long, serviceAction: (Long, String) => Future[Unit]): Action[AnyContent] =
@@ -65,7 +65,7 @@ class FriendController @Inject() (
       userService
         .getFriendsPaginated(username, limit, page)
         .map(friends => Ok(Json.toJson(PaginatedResult
-        (friends.totalCount, friends.entries.map(UserDTO(_)), friends.hasNextPage))))
+        (friends.totalCount, friends.entries.map(OutputUserDTO(_)), friends.hasNextPage))))
     }
 
   def sendRequest(username: String): Action[AnyContent] =

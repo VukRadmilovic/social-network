@@ -14,6 +14,8 @@ libraryDependencies += "mysql" % "mysql-connector-java" % "8.0.33"
 libraryDependencies += "com.typesafe.play" %% "play-slick" % "5.1.0"
 libraryDependencies += "com.typesafe.play" %% "play-slick-evolutions" % "5.1.0"
 libraryDependencies += "org.mindrot" % "jbcrypt" % "0.4"
+libraryDependencies += "io.minio" % "minio" % "8.0.0"
+libraryDependencies += "commons-io" % "commons-io" % "2.5"
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.novalite.controllers._"

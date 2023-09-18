@@ -1,17 +1,19 @@
 package controllers
 
 import actions.JWTAuthAction
-import dtos.{EmailChangeDTO, LoginAttemptDTO, PaginatedResult, PasswordChangeDTO, RefreshTokenDTO, UserDTO}
+import dtos._
+import exceptions.ValidationException
 import helpers.RequestKeys.TokenUsername
 import models.User
-import play.api.{Configuration, Logging}
+import play.api.libs.Files
 import play.api.libs.json._
 import play.api.mvc._
+import play.api.{Configuration, Logging}
 import repositories.UserRepository
 import services.{AuthService, FriendRequestService, UserService}
 
 import javax.inject._
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 //noinspection ScalaDocUnknownParameter
 @Singleton
@@ -27,7 +29,7 @@ class UserController @Inject() (
     extends BaseController
     with Logging {
 
-  implicit val paginatedResultUserJsonFormat: OFormat[PaginatedResult[UserDTO]] = Json.format[PaginatedResult[UserDTO]]
+  implicit val paginatedResultUserJsonFormat: OFormat[PaginatedResult[OutputUserDTO]] = Json.format[PaginatedResult[OutputUserDTO]]
 
   def getAll: Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
@@ -35,7 +37,7 @@ class UserController @Inject() (
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       userService.getAll(limit, page).map(users => {
-        Ok(Json.toJson(PaginatedResult(users.totalCount, users.entries.map(UserDTO(_)), users.hasNextPage)))
+        Ok(Json.toJson(PaginatedResult(users.totalCount, users.entries.map(OutputUserDTO(_)), users.hasNextPage)))
       })
     }
 
@@ -56,15 +58,15 @@ class UserController @Inject() (
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       userService.search(name, limit, page).map(users => {
-        Ok(Json.toJson(PaginatedResult(users.totalCount, users.entries.map(UserDTO(_)), users.hasNextPage)))
+        Ok(Json.toJson(PaginatedResult(users.totalCount, users.entries.map(OutputUserDTO(_)), users.hasNextPage)))
       })
     }
 
   def getByUsername(username: String): Action[AnyContent] =
     jwtAuthAction.async {
       userService.getByUsername(username).map {
-        case Some(user) => Ok(Json.toJson(UserDTO(user)))
-        case None       => NotFound
+        case Some(user) => Ok(Json.toJson(OutputUserDTO(user)))
+        case None => NotFound
       }
     }
 
@@ -92,12 +94,12 @@ class UserController @Inject() (
         .map(_ => NoContent)
     }
 
-  def register(): Action[User] =
-    Action.async(parse.json[User]) { implicit request =>
+  def register(): Action[InputUserDTO] =
+    Action.async(parse.json[InputUserDTO]) { implicit request =>
       val user = request.body
 
-      userService.register(user).map(newUser => Created(Json.toJson(UserDTO(newUser))))
-  }
+      userService.register(User.create(user)).map(newUser => Created(Json.toJson(OutputUserDTO(newUser))))
+    }
 
   def login(): Action[LoginAttemptDTO] =
     Action.async(parse.json[LoginAttemptDTO]) { implicit request =>
@@ -109,7 +111,7 @@ class UserController @Inject() (
         case None =>
           Unauthorized(Json.obj("message" -> "Your username or password is incorrect"))
       }
-  }
+    }
 
   def getAccessToken: Action[RefreshTokenDTO] =
     Action.async(parse.json[RefreshTokenDTO]) { implicit request =>
@@ -118,5 +120,33 @@ class UserController @Inject() (
       authService
         .generateAccessTokenIfRefreshValid(refreshTokenDTO.refreshToken)
         .map(token => Ok(Json.obj("token" -> token)))
+    }
+
+  def getProfilePicture(pictureOwner: String): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      userService.getProfilePicture(username, pictureOwner).map(picture => Ok(Json.toJson(picture)))
+    }
+
+  def uploadProfilePicture: Action[MultipartFormData[Files.TemporaryFile]] =
+    jwtAuthAction(parse.multipartFormData).async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      request.body.file("picture") match {
+        case Some(picture) =>
+          val file = picture.ref.path.toFile
+          val fileType = picture.contentType
+
+          userService.uploadProfilePicture(username, file, fileType.get).map(_ => NoContent)
+        case None => Future.failed(ValidationException("Missing picture"))
+      }
+    }
+
+  def deleteProfilePicture(): Action[AnyContent] =
+    jwtAuthAction.async { implicit request =>
+      val username = request.attrs.get(TokenUsername).get
+
+      userService.deleteProfilePicture(username).map(_ => NoContent)
     }
 }
