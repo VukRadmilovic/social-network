@@ -4,7 +4,7 @@ import actions.JWTAuthAction
 import dtos.{InputPostDTO, OutputPostDTO, PaginatedResult, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.Post
-import play.api.Logging
+import play.api.{Configuration, Logging}
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.{Action, AnyContent, BaseController, ControllerComponents}
 import services.PostService
@@ -16,7 +16,8 @@ import scala.concurrent.ExecutionContext
 class PostController @Inject() (
     val controllerComponents: ControllerComponents,
     val postService: PostService,
-    val jwtAuthAction: JWTAuthAction
+    val jwtAuthAction: JWTAuthAction,
+    val configuration: Configuration
 )(implicit ec: ExecutionContext)
     extends BaseController
     with Logging {
@@ -81,7 +82,7 @@ class PostController @Inject() (
   def getFriendTimeline(poster: String): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
-      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(configuration.get[Long]("entriesPerPage"))
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       postService.getFriendTimeline(username, poster, limit, page).map(posts => Ok(Json.toJson(posts)))
@@ -90,7 +91,7 @@ class PostController @Inject() (
   def getLikers(id: Long): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
-      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(configuration.get[Long]("entriesPerPage"))
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       postService.getLikers(id, username, limit, page)
@@ -110,7 +111,7 @@ class PostController @Inject() (
   def getTimeline: Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
-      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(configuration.get[Long]("entriesPerPage"))
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       postService.getTimeline(username, limit, page).map(posts => Ok(Json.toJson(posts)))

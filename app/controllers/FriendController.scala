@@ -4,7 +4,7 @@ import actions.JWTAuthAction
 import dtos.{PaginatedResult, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.FriendRequest
-import play.api.Logging
+import play.api.{Configuration, Logging}
 import play.api.libs.json._
 import play.api.mvc._
 import services.{FriendRequestService, UserService}
@@ -17,7 +17,8 @@ class FriendController @Inject() (
     val controllerComponents: ControllerComponents,
     val userService: UserService,
     val friendRequestService: FriendRequestService,
-    val jwtAuthAction: JWTAuthAction
+    val jwtAuthAction: JWTAuthAction,
+    val configuration: Configuration
 )(implicit ec: ExecutionContext)
     extends BaseController
     with Logging {
@@ -43,7 +44,7 @@ class FriendController @Inject() (
   private def getRequests(serviceAction: (String, Long, Long) => Future[PaginatedResult[FriendRequest]]): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
-      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(configuration.get[Long]("entriesPerPage"))
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       serviceAction(username, limit, page).map(requests => Ok(Json.toJson(requests)))
@@ -58,7 +59,7 @@ class FriendController @Inject() (
   def getFriends: Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
-      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(configuration.get[Long]("entriesPerPage"))
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       userService

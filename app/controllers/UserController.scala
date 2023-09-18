@@ -4,7 +4,7 @@ import actions.JWTAuthAction
 import dtos.{EmailChangeDTO, LoginAttemptDTO, PaginatedResult, PasswordChangeDTO, RefreshTokenDTO, UserDTO}
 import helpers.RequestKeys.TokenUsername
 import models.User
-import play.api.Logging
+import play.api.{Configuration, Logging}
 import play.api.libs.json._
 import play.api.mvc._
 import repositories.UserRepository
@@ -20,7 +20,8 @@ class UserController @Inject() (
     val userService: UserService,
     val friendRequestService: FriendRequestService,
     val jwtAuthAction: JWTAuthAction,
-    val authService: AuthService
+    val authService: AuthService,
+    val configuration: Configuration
 )(implicit ec: ExecutionContext)
     extends BaseController
     with Logging {
@@ -29,7 +30,7 @@ class UserController @Inject() (
 
   def getAll: Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
-      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(configuration.get[Long]("entriesPerPage"))
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       userService.getAll(limit, page).map(users => {
@@ -50,7 +51,7 @@ class UserController @Inject() (
    */
   def search(name: String): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
-      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(10L)
+      val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(configuration.get[Long]("entriesPerPage"))
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
       userService.search(name, limit, page).map(users => {
