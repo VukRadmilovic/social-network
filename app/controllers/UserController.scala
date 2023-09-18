@@ -13,6 +13,7 @@ import services.{AuthService, FriendRequestService, UserService}
 import javax.inject._
 import scala.concurrent.ExecutionContext
 
+//noinspection ScalaDocUnknownParameter
 @Singleton
 class UserController @Inject() (
     val controllerComponents: ControllerComponents,

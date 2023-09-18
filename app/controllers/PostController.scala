@@ -12,6 +12,7 @@ import services.PostService
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
+//noinspection ScalaDocUnknownParameter
 @Singleton
 class PostController @Inject() (
     val controllerComponents: ControllerComponents,
