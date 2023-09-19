@@ -6,7 +6,7 @@ POST    /users/requests/:username                   controllers.FriendController
 GET     /users/requests/received                    controllers.FriendController.getReceivedRequests()
 GET     /users/requests/sent                        controllers.FriendController.getSentRequests()
 GET     /users/access-token                         controllers.UserController.getAccessToken()
-GET     /users/search/:name                         controllers.UserController.search(name:String)
+GET     /users/search                               controllers.UserController.search()
 GET     /users/profile-picture/:user                controllers.UserController.getProfilePicture(user:String)
 POST    /users/profile-picture                      controllers.UserController.uploadProfilePicture()
 DELETE  /users/profile-picture                      controllers.UserController.deleteProfilePicture()

@@ -52,8 +52,9 @@ class UserController @Inject() (
    * @param page  The page number for paginating the results (starting from 0).
    * @return JSON representation of users whose display name or username starts with `name`.
    */
-  def search(name: String): Action[AnyContent] =
+  def search: Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
+      val name: String = request.getQueryString("name").getOrElse(throw ValidationException("No name to search for has been provided"))
       val limit: Long = request.getQueryString("limit").map(_.toLong).getOrElse(configuration.get[Long]("entriesPerPage"))
       val page: Long = request.getQueryString("page").map(_.toLong).getOrElse(0L)
 
