@@ -42,15 +42,15 @@ class UserController @Inject() (
     }
 
   /**
-   * Retrieves users whose display name or username starts with a specified string (case-insensitive) in a paginated manner.
+   * Search for users whose usernames or display names match a specified string using a MySQL full-text search in a paginated manner.
    *
-   * This method performs a case-insensitive search for users whose display name or username
-   * starts with the provided string and paginates the results.
+   * This endpoint performs a MySQL full-text search on the usernames and display names of users,
+   * matching them against the provided string, and returns the results in a paginated JSON format.
+   * Pagination parameters (limit and page) can be optionally provided to control the number of results
+   * and the page number.
    *
-   * @param name  The search term used to filter users.
-   * @param limit The maximum number of users to retrieve in each page.
-   * @param page  The page number for paginating the results (starting from 0).
-   * @return JSON representation of users whose display name or username starts with `name`.
+   * @return A JSON response containing users whose usernames or display names match the provided string
+   *         using MySQL full-text search, along with total count and pagination information.
    */
   def search: Action[AnyContent] =
     jwtAuthAction.async { implicit request =>

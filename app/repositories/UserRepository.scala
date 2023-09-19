@@ -32,6 +32,18 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     )
   }
 
+  /**
+   * Searches for users whose usernames or display names match a given search term using a full-text search.
+   *
+   * This method performs a case-insensitive search for users whose usernames or display names contain words
+   * similar to the provided search term. It utilizes MySQL's full-text search capabilities to retrieve a
+   * paginated list of matching users, along with total count and pagination information.
+   *
+   * @param name  The search term used to filter users based on usernames or display names.
+   * @param limit The maximum number of users to retrieve on each page.
+   * @param page  The page number for paginating the search results (starting from 0).
+   * @return A Future containing a paginated list of users whose usernames or display names match the search term.
+   */
   def search(name: String, limit: Long, page: Long): Future[PaginatedResult[User]] = db.run {
     val offset = page * limit
     val searchQuery = sql"""
