@@ -32,28 +32,26 @@ class UserRepository @Inject() (val dbConfigProvider: DatabaseConfigProvider)(
     )
   }
 
-  /**
-   * Retrieves users whose display name or username starts with a string, case-insensitively, in a paginated manner.
-   *
-   * This method performs a case-insensitive search for users whose display name or username starts with the provided string.
-   *
-   * @param name  The search term used to filter users.
-   * @param limit The maximum number of users to retrieve on each page.
-   * @param page  The page number for paginating the results (starting from 0).
-   * @return JSON representation of a paginated list of users whose display name or username starts with `name`.
-   */
   def search(name: String, limit: Long, page: Long): Future[PaginatedResult[User]] = db.run {
     val offset = page * limit
-    val query = userTable.filter(user => user.username.toLowerCase.startsWith(name.toLowerCase) ||
-        user.displayName.toLowerCase.startsWith(name.toLowerCase))
+    val searchQuery = sql"""
+      SELECT * FROM users
+      WHERE MATCH(username, displayName) AGAINST ($name IN NATURAL LANGUAGE MODE)
+      LIMIT $limit OFFSET $offset
+    """.as[User]
+
+    val countQuery = sql"""
+      SELECT COUNT(*) FROM users
+      WHERE MATCH(username, displayName) AGAINST ($name IN NATURAL LANGUAGE MODE)
+    """.as[Int]
 
     for {
-      users <- query.drop(offset).take(limit).result
-      numberOfUsers <- query.length.result
+      users <- searchQuery
+      totalCount <- countQuery
     } yield PaginatedResult(
-      totalCount = numberOfUsers,
+      totalCount = totalCount.headOption.getOrElse(0),
       entries = users.toList,
-      hasNextPage = offset + limit < numberOfUsers
+      hasNextPage = offset + limit < totalCount.headOption.getOrElse(0)
     )
   }
 

@@ -1,13 +1,11 @@
 package helpers
 
-import com.typesafe.config.ConfigFactory
 import io.minio._
 import io.minio.http.Method
 
 import java.io.{File, FileInputStream}
 
-
-object MinIO extends App {
+object MinIO {
   def uploadProfilePicture(username: String, file: File, contentType: String): Unit = {
     val bucketName = "profile-pictures"
     val minioClient = MinioClient
