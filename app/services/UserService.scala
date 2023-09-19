@@ -5,8 +5,6 @@ import exceptions.{AuthorizationException, ValidationException}
 import helpers.MinIO
 import models.User
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.Files
-import play.api.mvc.MultipartFormData
 import repositories.UserRepository
 
 import java.io.File
@@ -96,7 +94,7 @@ class UserService @Inject() (
     if (username == pictureOwner) {
       getProfilePicture(pictureOwner)
     } else {
-      userRepository.getByUsername(username).flatMap {
+      userRepository.getByUsername(pictureOwner).flatMap {
         case Some(_) => userRepository.areFriends(username, pictureOwner).flatMap { friends =>
           if (friends) {
             getProfilePicture(pictureOwner)
@@ -104,7 +102,7 @@ class UserService @Inject() (
             throw AuthorizationException("You can only see friend's profile pictures")
           }
         }
-        case _ => throw ValidationException("User does not exist")
+        case None => throw ValidationException("User does not exist")
       }
     }
   }
@@ -114,7 +112,7 @@ class UserService @Inject() (
       if (hasProfilePicture.get) {
         MinIO.getProfilePicture(pictureOwner)
       } else {
-        MinIO.getProfilePicture("default")
+        MinIO.getProfilePicture("default.jpg")
       }
     }
   }

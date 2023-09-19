@@ -1,10 +1,10 @@
 package helpers
 
-import _root_.org.apache.commons.io.IOUtils
+import com.typesafe.config.ConfigFactory
 import io.minio._
+import io.minio.http.Method
 
 import java.io.{File, FileInputStream}
-import java.util.Base64
 
 
 object MinIO extends App {
@@ -46,7 +46,7 @@ object MinIO extends App {
       .credentials("admin", "password")
       .build
 
-    val stream = minioClient.getObject(GetObjectArgs.builder.bucket(bucketName).`object`(username).build)
-    Base64.getEncoder.encodeToString(IOUtils.toByteArray(stream))
+    val args = GetPresignedObjectUrlArgs.builder.method(Method.GET).bucket(bucketName).`object`(username).build
+    minioClient.getPresignedObjectUrl(args)
   }
 }

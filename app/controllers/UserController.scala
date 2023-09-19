@@ -122,6 +122,15 @@ class UserController @Inject() (
         .map(token => Ok(Json.obj("token" -> token)))
     }
 
+  /**
+   * Retrieves the URL of the profile picture for a specified user.
+   *
+   * This endpoint returns a URL that can be used to access the profile picture of the specified user.
+   * The URL is generated using a presigned URL from MinIO, ensuring secure access to the image.
+   *
+   * @param pictureOwner The username of the user whose profile picture URL is to be retrieved.
+   * @return A JSON response containing the URL of the profile picture.
+   */
   def getProfilePicture(pictureOwner: String): Action[AnyContent] =
     jwtAuthAction.async { implicit request =>
       val username = request.attrs.get(TokenUsername).get
