@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthService @Inject() (val configuration: Configuration)(implicit ec: ExecutionContext) {
   implicit val clock: Clock = Clock.systemUTC
-  private val secretKey = "01c0d934ee75f196cdfed19207a549aa60fcac4194011602e4b12f7b1cd5e17e"
+  private val secretKey = sys.env("AuthSecretKey")
 
   private val accessTokenExpirationMillis = configuration.get[FiniteDuration]("accessTokenExpiration").toMillis
   private val refreshTokenExpirationMillis = configuration.get[FiniteDuration]("refreshTokenExpiration").toMillis

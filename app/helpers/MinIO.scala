@@ -1,6 +1,7 @@
 package helpers
 
 import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.regions.Region
@@ -16,11 +17,13 @@ import scala.compat.java8.FutureConverters
 import scala.concurrent.{ExecutionContext, Future}
 
 object MinIO {
+  private val config = ConfigFactory.load()
+
   private val bucketName = "profile-pictures"
   private val region = Region.US_EAST_1
-  private val endpoint = new URI("http://localhost:9000")
+  private val endpoint = new URI(config.getString("awsEndpoint"))
   private val credentials = StaticCredentialsProvider.create(
-    AwsBasicCredentials.create("RTKIDBuVGP2PZW0rrVJf", "2YcFm9NBgzi3ZDjQg5OLqjyiuD78YYPxAutHlNlc"))
+    AwsBasicCredentials.create(sys.env("AwsAccessKeyId"), sys.env("AwsSecretAccessKey")))
   private val serviceConfiguration = S3Configuration.builder().pathStyleAccessEnabled(true).build
 
   private implicit val minIOExecutionContext: ExecutionContext = ActorSystem().dispatchers.lookup("minio-context")
