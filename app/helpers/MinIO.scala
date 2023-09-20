@@ -1,5 +1,6 @@
 package helpers
 
+import akka.actor.ActorSystem
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.regions.Region
@@ -22,6 +23,8 @@ object MinIO {
     AwsBasicCredentials.create("RTKIDBuVGP2PZW0rrVJf", "2YcFm9NBgzi3ZDjQg5OLqjyiuD78YYPxAutHlNlc"))
   private val serviceConfiguration = S3Configuration.builder().pathStyleAccessEnabled(true).build
 
+  private implicit val minIOExecutionContext: ExecutionContext = ActorSystem().dispatchers.lookup("minio-context")
+
   private def getS3AsyncClient: S3AsyncClient = {
     S3AsyncClient.builder()
       .region(region)
@@ -40,8 +43,7 @@ object MinIO {
       .build()
   }
 
-  def uploadProfilePicture(username: String, file: File, contentType: String)
-                          (implicit ec: ExecutionContext): Future[Unit] = {
+  def uploadProfilePicture(username: String, file: File, contentType: String): Future[Unit] = {
     val s3AsyncClient = getS3AsyncClient
 
     val request = PutObjectRequest.builder()
@@ -57,8 +59,7 @@ object MinIO {
     FutureConverters.toScala(uploadFuture).map(_ => ())
   }
 
-  def deleteProfilePicture(username: String)
-                          (implicit ec: ExecutionContext): Future[Unit] = {
+  def deleteProfilePicture(username: String): Future[Unit] = {
     val s3AsyncClient = getS3AsyncClient
 
     val request = DeleteObjectRequest.builder()
@@ -69,8 +70,7 @@ object MinIO {
     FutureConverters.toScala(s3AsyncClient.deleteObject(request)).map(_ => ())
   }
 
-  def getProfilePicture(username: String)
-                       (implicit ec: ExecutionContext): Future[String] = {
+  def getProfilePicture(username: String): Future[String] = {
     val presigner = getS3Presigner
 
     val getObjectRequest = GetObjectRequest.builder()
