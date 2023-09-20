@@ -19,6 +19,7 @@ libraryDependencies += "commons-io" % "commons-io" % "2.5"
 libraryDependencies += "software.amazon.awssdk" % "s3" % "2.20.65"
 libraryDependencies += "software.amazon.awssdk" % "core" % "2.20.65"
 libraryDependencies += "software.amazon.awssdk" % "auth" % "2.20.65"
+libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.novalite.controllers._"

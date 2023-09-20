@@ -109,7 +109,7 @@ class UserService @Inject() (
   }
 
   private def getProfilePicture(pictureOwner: String): Future[String] = {
-    userRepository.hasProfilePicture(pictureOwner).map { hasProfilePicture =>
+    userRepository.hasProfilePicture(pictureOwner).flatMap { hasProfilePicture =>
       if (hasProfilePicture.get) {
         MinIO.getProfilePicture(pictureOwner)
       } else {
@@ -119,15 +119,17 @@ class UserService @Inject() (
   }
 
   def uploadProfilePicture(username: String, file: File, contentType: String): Future[Unit] = {
-    MinIO.uploadProfilePicture(username, file, contentType)
-    userRepository.addProfilePicture(username)
+    MinIO.uploadProfilePicture(username, file, contentType).flatMap(_ => {
+      userRepository.addProfilePicture(username)
+    })
   }
 
   def deleteProfilePicture(username: String): Future[Unit] = {
     userRepository.hasProfilePicture(username).flatMap {
       case Some(has) if has =>
-        MinIO.deleteProfilePicture(username)
-        userRepository.deleteProfilePicture(username)
+        MinIO.deleteProfilePicture(username).map(_ => {
+          userRepository.deleteProfilePicture(username)
+        })
       case _ =>
         throw ValidationException("You don't have a profile picture")
     }
