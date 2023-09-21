@@ -2,7 +2,7 @@ package services
 
 import dtos.{LoginAttemptDTO, PaginatedResult}
 import exceptions.{AuthorizationException, ValidationException}
-import helpers.MinIO
+import helpers.S3API
 import models.User
 import org.mindrot.jbcrypt.BCrypt
 import repositories.UserRepository
@@ -16,6 +16,8 @@ class UserService @Inject() (
     authService: AuthService,
     userValidationService: UserValidationService
 )(implicit ec: ExecutionContext) {
+  private val profilePicturesBucket = "profile-pictures"
+
   def getAll(limit: Long, page: Long): Future[PaginatedResult[User]] =
     userRepository.getAll(limit, page)
 
@@ -111,15 +113,15 @@ class UserService @Inject() (
   private def getProfilePicture(pictureOwner: String): Future[String] = {
     userRepository.hasProfilePicture(pictureOwner).flatMap { hasProfilePicture =>
       if (hasProfilePicture.get) {
-        MinIO.getProfilePicture(pictureOwner)
+        S3API.get(profilePicturesBucket, pictureOwner)
       } else {
-        MinIO.getProfilePicture("default.jpg")
+        S3API.get(profilePicturesBucket, "default.jpg")
       }
     }
   }
 
   def uploadProfilePicture(username: String, file: File, contentType: String): Future[Unit] = {
-    MinIO.uploadProfilePicture(username, file, contentType).flatMap(_ => {
+    S3API.put(profilePicturesBucket, username, file, contentType).flatMap(_ => {
       userRepository.addProfilePicture(username)
     })
   }
@@ -127,7 +129,7 @@ class UserService @Inject() (
   def deleteProfilePicture(username: String): Future[Unit] = {
     userRepository.hasProfilePicture(username).flatMap {
       case Some(has) if has =>
-        MinIO.deleteProfilePicture(username).map(_ => {
+        S3API.delete(profilePicturesBucket, username).map(_ => {
           userRepository.deleteProfilePicture(username)
         })
       case _ =>

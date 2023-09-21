@@ -16,17 +16,16 @@ import java.net.URI
 import java.time.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
-object MinIO {
+object S3API {
   private val config = ConfigFactory.load()
 
-  private val bucketName = "profile-pictures"
   private val region = Region.US_EAST_1
   private val endpoint = new URI(config.getString("awsEndpoint"))
   private val credentials = StaticCredentialsProvider.create(
     AwsBasicCredentials.create(sys.env("AwsAccessKeyId"), sys.env("AwsSecretAccessKey")))
   private val serviceConfiguration = S3Configuration.builder().pathStyleAccessEnabled(true).build
 
-  private implicit val minIOExecutionContext: ExecutionContext = ActorSystem().dispatchers.lookup("minio-context")
+  private implicit val s3ExecutionContext: ExecutionContext = ActorSystem().dispatchers.lookup("s3-context")
 
   private def getS3AsyncClient: S3AsyncClient = {
     S3AsyncClient.builder()
@@ -46,39 +45,37 @@ object MinIO {
       .build()
   }
 
-  def uploadProfilePicture(username: String, file: File, contentType: String): Future[Unit] = {
+  def put(bucket: String, key: String, file: File, contentType: String): Future[Unit] = {
     val s3AsyncClient = getS3AsyncClient
 
     val request = PutObjectRequest.builder()
-      .bucket(bucketName)
-      .key(username)
+      .bucket(bucket)
+      .key(key)
       .contentType(contentType)
       .build()
 
     val asyncRequestBody = AsyncRequestBody.fromFile(file.toPath)
-
-    val uploadFuture = s3AsyncClient.putObject(request, asyncRequestBody)
-
-    uploadFuture.toScala.map(_ => ())
+    val putFuture = s3AsyncClient.putObject(request, asyncRequestBody)
+    putFuture.toScala.map(_ => ())
   }
 
-  def deleteProfilePicture(username: String): Future[Unit] = {
+  def delete(bucket: String, key: String): Future[Unit] = {
     val s3AsyncClient = getS3AsyncClient
 
     val request = DeleteObjectRequest.builder()
-      .bucket(bucketName)
-      .key(username)
+      .bucket(bucket)
+      .key(key)
       .build()
 
     s3AsyncClient.deleteObject(request).toScala.map(_ => ())
   }
 
-  def getProfilePicture(username: String): Future[String] = {
+  def get(bucket: String, key: String): Future[String] = {
     val presigner = getS3Presigner
 
     val getObjectRequest = GetObjectRequest.builder()
-      .bucket(bucketName)
-      .key(username)
+      .bucket(bucket)
+      .key(key)
       .build()
 
     val getObjectPresignRequest = GetObjectPresignRequest.builder
