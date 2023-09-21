@@ -2,6 +2,7 @@ package helpers
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
+import helpers.Implicits._
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.regions.Region
@@ -13,7 +14,6 @@ import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import java.io.File
 import java.net.URI
 import java.time.Duration
-import scala.compat.java8.FutureConverters
 import scala.concurrent.{ExecutionContext, Future}
 
 object MinIO {
@@ -59,7 +59,7 @@ object MinIO {
 
     val uploadFuture = s3AsyncClient.putObject(request, asyncRequestBody)
 
-    FutureConverters.toScala(uploadFuture).map(_ => ())
+    uploadFuture.toScala.map(_ => ())
   }
 
   def deleteProfilePicture(username: String): Future[Unit] = {
@@ -70,7 +70,7 @@ object MinIO {
       .key(username)
       .build()
 
-    FutureConverters.toScala(s3AsyncClient.deleteObject(request)).map(_ => ())
+    s3AsyncClient.deleteObject(request).toScala.map(_ => ())
   }
 
   def getProfilePicture(username: String): Future[String] = {
