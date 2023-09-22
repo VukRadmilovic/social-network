@@ -21,6 +21,15 @@ libraryDependencies += "software.amazon.awssdk" % "core" % "2.20.65"
 libraryDependencies += "software.amazon.awssdk" % "auth" % "2.20.65"
 libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
 
+import com.typesafe.sbt.packager.docker.DockerChmodType
+import com.typesafe.sbt.packager.docker.DockerPermissionStrategy
+dockerChmodType := DockerChmodType.UserGroupWriteExecute
+dockerPermissionStrategy := DockerPermissionStrategy.CopyChown
+enablePlugins(DockerPlugin)
+
+dockerExposedPorts := Seq(8080)
+dockerBaseImage := "openjdk:11-jdk"
+dockerUpdateLatest := true
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.novalite.controllers._"
 

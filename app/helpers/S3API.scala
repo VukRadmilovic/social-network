@@ -21,6 +21,7 @@ object S3API {
 
   private val region = Region.US_EAST_1
   private val endpoint = new URI(config.getString("awsEndpoint"))
+  private val getEndpoint = new URI(config.getString("awsGetEndpoint"))
   private val credentials = StaticCredentialsProvider.create(
     AwsBasicCredentials.create(sys.env("AwsAccessKeyId"), sys.env("AwsSecretAccessKey")))
   private val serviceConfiguration = S3Configuration.builder().pathStyleAccessEnabled(true).build
@@ -41,7 +42,7 @@ object S3API {
       .region(region)
       .credentialsProvider(credentials)
       .serviceConfiguration(serviceConfiguration)
-      .endpointOverride(endpoint)
+      .endpointOverride(getEndpoint)
       .build()
   }
 
