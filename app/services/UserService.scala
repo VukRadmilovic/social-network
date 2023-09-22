@@ -21,18 +21,6 @@ class UserService @Inject() (
   def getAll(limit: Long, page: Long): Future[PaginatedResult[User]] =
     userRepository.getAll(limit, page)
 
-  /**
-   * Searches for users whose usernames or display names match a given search term using a full-text search.
-   *
-   * This method delegates the search operation to the UserRepository, which performs a case-insensitive search
-   * for users based on usernames or display names containing words similar to the provided search term.
-   * It returns a paginated list of matching users, along with total count and pagination information.
-   *
-   * @param name  The search term used to filter users based on usernames or display names.
-   * @param limit The maximum number of users to retrieve on each page.
-   * @param page  The page number for paginating the search results (starting from 0).
-   * @return A Future containing a paginated list of users whose usernames or display names match the search term.
-   */
   def search(name: String, limit: Long, page: Long): Future[PaginatedResult[User]] =
     userRepository.search(name, limit, page)
 
