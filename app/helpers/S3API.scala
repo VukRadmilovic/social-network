@@ -1,8 +1,8 @@
 package helpers
 
 import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
 import helpers.Implicits._
+import play.api.Configuration
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.regions.Region
@@ -14,14 +14,14 @@ import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import java.io.File
 import java.net.URI
 import java.time.Duration
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-object S3API {
-  private val config = ConfigFactory.load()
-
+@Singleton
+class S3API @Inject() (val configuration: Configuration) {
   private val region = Region.US_EAST_1
-  private val endpoint = new URI(config.getString("awsEndpoint"))
-  private val getEndpoint = new URI(config.getString("awsGetEndpoint"))
+  private val endpoint = new URI(configuration.get[String]("awsEndpoint"))
+  private val getEndpoint = new URI(configuration.get[String]("awsGetEndpoint"))
   private val credentials = StaticCredentialsProvider.create(
     AwsBasicCredentials.create(sys.env("AwsAccessKeyId"), sys.env("AwsSecretAccessKey")))
   private val serviceConfiguration = S3Configuration.builder().pathStyleAccessEnabled(true).build

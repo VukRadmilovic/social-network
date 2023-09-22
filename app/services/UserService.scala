@@ -14,7 +14,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class UserService @Inject() (
     userRepository: UserRepository,
     authService: AuthService,
-    userValidationService: UserValidationService
+    userValidationService: UserValidationService,
+    s3API: S3API
 )(implicit ec: ExecutionContext) {
   private val profilePicturesBucket = "profile-pictures"
 
@@ -101,15 +102,15 @@ class UserService @Inject() (
   private def getProfilePicture(pictureOwner: String): Future[String] = {
     userRepository.hasProfilePicture(pictureOwner).flatMap { hasProfilePicture =>
       if (hasProfilePicture.get) {
-        S3API.get(profilePicturesBucket, pictureOwner)
+        s3API.get(profilePicturesBucket, pictureOwner)
       } else {
-        S3API.get(profilePicturesBucket, "default.jpg")
+        s3API.get(profilePicturesBucket, "default.jpg")
       }
     }
   }
 
   def uploadProfilePicture(username: String, file: File, contentType: String): Future[Unit] = {
-    S3API.put(profilePicturesBucket, username, file, contentType).flatMap(_ => {
+    s3API.put(profilePicturesBucket, username, file, contentType).flatMap(_ => {
       userRepository.addProfilePicture(username)
     })
   }
@@ -117,7 +118,7 @@ class UserService @Inject() (
   def deleteProfilePicture(username: String): Future[Unit] = {
     userRepository.hasProfilePicture(username).flatMap {
       case Some(has) if has =>
-        S3API.delete(profilePicturesBucket, username).map(_ => {
+        s3API.delete(profilePicturesBucket, username).map(_ => {
           userRepository.deleteProfilePicture(username)
         })
       case _ =>
